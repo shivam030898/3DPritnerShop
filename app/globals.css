@@ -1,26 +1,130 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --color-bg: #fafafa;
+  --color-surface: #ffffff;
+  --color-surface-2: #f2f2f0;
+  --color-border: #e6e6e3;
+  --color-border-strong: #d4d4d0;
+  --color-text: #0b0b0c;
+  --color-text-dim: #6b6b6f;
+  --color-text-faint: #9a9a9d;
+  --color-accent: #ff5a1f;
+  --color-accent-soft: #fff1ea;
+  --color-accent-line: rgba(255, 90, 31, 0.35);
+  --color-success: #1a8f4c;
+  --color-success-soft: #eaf7ee;
+  --color-danger: #d1352b;
+  --color-danger-soft: #fdecea;
+  --shadow-card: 0 1px 2px rgba(20, 20, 20, 0.04), 0 8px 24px rgba(20, 20, 20, 0.04);
+
+  --font-display: var(--font-space-grotesk);
+  --font-body: var(--font-inter);
+
+  --ease-standard: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dark {
+  --color-bg: #0a0a0b;
+  --color-surface: #131315;
+  --color-surface-2: #1a1a1d;
+  --color-border: #232326;
+  --color-border-strong: #313135;
+  --color-text: #f2f2f0;
+  --color-text-dim: #a3a3a6;
+  --color-text-faint: #707074;
+  --color-accent: #ff6b35;
+  --color-accent-soft: rgba(255, 107, 53, 0.14);
+  --color-accent-line: rgba(255, 107, 53, 0.4);
+  --color-success: #3ddc84;
+  --color-success-soft: rgba(61, 220, 132, 0.14);
+  --color-danger: #ff5c52;
+  --color-danger-soft: rgba(255, 92, 82, 0.14);
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.2), 0 8px 24px rgba(0, 0, 0, 0.28);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-bg: var(--color-bg);
+  --color-surface: var(--color-surface);
+  --color-surface-2: var(--color-surface-2);
+  --color-border: var(--color-border);
+  --color-border-strong: var(--color-border-strong);
+  --color-text: var(--color-text);
+  --color-text-dim: var(--color-text-dim);
+  --color-text-faint: var(--color-text-faint);
+  --color-accent: var(--color-accent);
+  --color-accent-soft: var(--color-accent-soft);
+  --color-accent-line: var(--color-accent-line);
+  --color-success: var(--color-success);
+  --color-success-soft: var(--color-success-soft);
+  --color-danger: var(--color-danger);
+  --color-danger-soft: var(--color-danger-soft);
+  --shadow-card: var(--shadow-card);
+  --font-display: var(--font-display);
+  --font-body: var(--font-body);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  border-color: var(--color-border);
+}
+
+html {
+  background: var(--color-bg);
+  color-scheme: light;
+}
+
+html.dark {
+  color-scheme: dark;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+  transition: background-color 200ms ease, color 200ms ease;
+}
+
+::selection {
+  background: var(--color-accent);
+  color: #ffffff;
+}
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--color-border-strong);
+  border-radius: 6px;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--color-text-faint); }
+
+.text-display {
+  font-family: var(--font-display), ui-sans-serif, sans-serif;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  line-height: 1.02;
+}
+
+.text-mono-label {
+  font-family: var(--font-display), ui-sans-serif, sans-serif;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
