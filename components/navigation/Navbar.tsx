@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -32,7 +33,8 @@ export default function Navbar() {
     <>
       <header className="sticky top-0 z-40 border-b border-border bg-bg/85 backdrop-blur-md">
         <nav className="relative mx-auto flex h-16 max-w-[1400px] items-center justify-between px-5 md:px-8">
-          <Link href="/" className="text-display text-lg text-text">
+          <Link href="/" className="flex items-center gap-2 text-display text-lg text-text">
+            <Image src="/images/logo-v3.png" alt="" width={28} height={28} className="h-7 w-7" priority />
             {BRAND.name}
           </Link>
 
@@ -104,7 +106,10 @@ export default function Navbar() {
             className="fixed inset-0 z-50 flex flex-col bg-bg lg:hidden"
           >
             <div className="flex h-16 items-center justify-between border-b border-border px-5">
-              <span className="text-display text-lg text-text">{BRAND.name}</span>
+              <span className="flex items-center gap-2 text-display text-lg text-text">
+                <Image src="/images/logo-v3.png" alt="" width={28} height={28} className="h-7 w-7" />
+                {BRAND.name}
+              </span>
               <button onClick={() => setOpen(false)} aria-label="Close menu" className="text-text">
                 <X size={22} strokeWidth={1.75} />
               </button>

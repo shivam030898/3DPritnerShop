@@ -67,7 +67,7 @@ const jsonLd = {
       "@id": `${SITE_URL}/#organization`,
       name: "FORMA",
       url: SITE_URL,
-      logo: `${SITE_URL}/images/logo.png`,
+      logo: `${SITE_URL}/images/logo-v3.png`,
     },
     {
       "@type": "Service",
