@@ -2,7 +2,7 @@
 
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { ORDER_STAGES, generateOrderId, generateTrackingNumber } from "@/lib/orders";
+import { generateOrderId, generateTrackingNumber } from "@/lib/orders";
 
 const CARRIERS = ["Xpressbees", "Delhivery", "Shiprocket"];
 const SHIPPING_FLAT = 99;
@@ -72,9 +72,12 @@ export async function placeCartOrder(details: CheckoutDetails): Promise<PlaceOrd
     await db.$transaction(async (tx) => {
       for (const row of cartRows) {
         const isCustom = row.type === "custom";
+        const isPrintables = isCustom && row.modelSourceType === "PRINTABLES";
 
+        // A Printables-sourced item has no real file to describe — there's
+        // nothing to save as a Design draft, unlike a genuine upload.
         let designId: string | undefined;
-        if (isCustom) {
+        if (isCustom && !isPrintables) {
           const stats = row.statsJson
             ? (JSON.parse(row.statsJson) as { volumeCm3: number; dimensionsCm: { x: number; y: number; z: number } })
             : { volumeCm3: 0, dimensionsCm: { x: 0, y: 0, z: 0 } };
@@ -107,8 +110,11 @@ export async function placeCartOrder(details: CheckoutDetails): Promise<PlaceOrd
             userId,
             designId,
             productSlug: !isCustom ? row.slug ?? undefined : undefined,
-            itemName: isCustom ? row.fileName ?? row.name : row.name,
+            itemName: isPrintables ? "Printables model" : isCustom ? row.fileName ?? row.name : row.name,
             itemType: row.type,
+            modelSourceType: isCustom ? row.modelSourceType ?? "UPLOAD" : undefined,
+            printablesUrl: isPrintables ? row.printablesUrl : undefined,
+            notes: row.notes,
             material: row.material,
             color: row.color,
             quality: isCustom ? row.quality : undefined,
@@ -122,16 +128,15 @@ export async function placeCartOrder(details: CheckoutDetails): Promise<PlaceOrd
             shipping: SHIPPING_FLAT,
             total: orderTotal,
             paymentMethod: details.paymentMethod,
+            paymentStatus: "PAID",
+            status: "PENDING",
             addressId: details.addressId,
             addressSnapshot,
             trackingNumber: generateTrackingNumber(),
             carrier: CARRIERS[Math.floor(Math.random() * CARRIERS.length)],
             createdAt,
             statusHistory: {
-              create: ORDER_STAGES.map((stage) => ({
-                stage: stage.key,
-                timestamp: new Date(createdAt.getTime() + stage.offsetHours * 60 * 60 * 1000),
-              })),
+              create: { status: "PENDING" },
             },
           },
         });
@@ -169,5 +174,8 @@ export async function getUserOrders() {
 }
 
 export async function getOrderByNumber(orderNumber: string) {
-  return db.order.findUnique({ where: { orderNumber } });
+  return db.order.findUnique({
+    where: { orderNumber },
+    include: { statusHistory: { orderBy: { createdAt: "asc" } } },
+  });
 }

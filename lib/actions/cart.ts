@@ -5,6 +5,8 @@ import { db } from "@/lib/db";
 import type { CartItem } from "@/lib/generated/prisma";
 import { buildConfigKey, mergeCartItems, type CartLineItem, type NewCartItem } from "@/lib/cart";
 import type { ColorKey, MaterialKey, QualityKey } from "@/lib/constants";
+import { parsePrintablesUrl } from "@/lib/printables";
+import { getPrintablesPriceOption, type PrintablesSizeKey } from "@/lib/printablesPricing";
 
 export type CartResult = { ok: true; items: CartLineItem[] } | { ok: false; error: string };
 
@@ -23,6 +25,9 @@ function toLineItem(row: CartItem): CartLineItem {
     fileUrl: row.fileUrl ?? undefined,
     fileType: (row.fileType as CartLineItem["fileType"]) ?? undefined,
     statsJson: row.statsJson ?? undefined,
+    modelSourceType: (row.modelSourceType as CartLineItem["modelSourceType"]) ?? undefined,
+    printablesUrl: row.printablesUrl ?? undefined,
+    notes: row.notes ?? undefined,
     material: (row.material as MaterialKey) ?? undefined,
     color: (row.color as ColorKey) ?? undefined,
     quality: (row.quality as QualityKey) ?? undefined,
@@ -47,6 +52,9 @@ function toCartWriteData(userId: string, configKey: string, item: NewCartItem, q
     fileUrl: item.fileUrl,
     fileType: item.fileType,
     statsJson: item.statsJson,
+    modelSourceType: item.modelSourceType,
+    printablesUrl: item.printablesUrl,
+    notes: item.notes,
     material: item.material,
     color: item.color,
     quality: item.quality,
@@ -54,6 +62,39 @@ function toCartWriteData(userId: string, configKey: string, item: NewCartItem, q
     widthMm: item.widthMm,
     depthMm: item.depthMm,
     heightMm: item.heightMm,
+  };
+}
+
+const SIZE_LABEL_TO_TIER: Record<string, PrintablesSizeKey> = {
+  Small: "small",
+  Medium: "medium",
+  Large: "large",
+};
+
+/**
+ * A Printables-sourced line has no real geometry, so unlike an uploaded
+ * file's price (computed from real parsed volume) its price is a generic
+ * size-tier estimate — cheap for a client to fabricate. Never trust it:
+ * recompute from the same tier/material/quality/quantity server-side and
+ * re-validate the URL, ignoring whatever `unitPrice` the client sent.
+ */
+function securePrintablesItem<T extends NewCartItem>(item: T): T | { error: string } {
+  const parsed = parsePrintablesUrl(item.printablesUrl ?? "");
+  if (!parsed.ok) return { error: parsed.error };
+
+  const tier = SIZE_LABEL_TO_TIER[item.sizeLabel ?? ""] ?? "medium";
+  const materialKey = (item.material ?? "pla") as MaterialKey;
+  const qualityKey = (item.quality ?? "standard") as QualityKey;
+  const quantity = item.quantity ?? 1;
+  const option = getPrintablesPriceOption(tier, { materialKey, qualityKey, quantity });
+
+  return {
+    ...item,
+    printablesUrl: parsed.url,
+    unitPrice: option.price.unitCost,
+    widthMm: option.dimensionsMm.width,
+    depthMm: option.dimensionsMm.depth,
+    heightMm: option.dimensionsMm.height,
   };
 }
 
@@ -79,10 +120,18 @@ export async function getCartAction(): Promise<CartResult> {
   }
 }
 
-export async function addToCartAction(item: NewCartItem): Promise<CartResult> {
+export async function addToCartAction(rawItem: NewCartItem): Promise<CartResult> {
   const session = await auth();
   if (!session?.user?.id) return { ok: true, items: [] };
   const userId = session.user.id;
+
+  let item = rawItem;
+  if (rawItem.modelSourceType === "PRINTABLES") {
+    const secured = securePrintablesItem(rawItem);
+    if ("error" in secured) return { ok: false, error: secured.error };
+    item = secured;
+  }
+
   const configKey = buildConfigKey(item);
   const quantity = item.quantity ?? 1;
 
@@ -168,7 +217,13 @@ export async function mergeGuestCartAction(guestItems: CartLineItem[]): Promise<
     }
 
     const existingRows = await getCartRows(userId);
-    const merged = mergeCartItems(existingRows, guestItems);
+    const merged = mergeCartItems(existingRows, guestItems)
+      // A guest-cart Printables line's price came from the client with no
+      // server check yet (unlike addToCartAction) — reprice it now, same as
+      // any other new Printables cart write. Drop a line whose URL somehow
+      // no longer validates rather than failing the whole cart merge.
+      .map((item) => (item.modelSourceType === "PRINTABLES" ? securePrintablesItem(item) : item))
+      .filter((item): item is CartLineItem => !("error" in item));
 
     await db.$transaction(
       merged.map((item) =>

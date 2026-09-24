@@ -7,6 +7,7 @@ import { useCart } from "@/lib/useCart";
 import { formatINR } from "@/lib/utils";
 import CartLineCard from "@/components/cart/CartLineCard";
 import Button from "@/components/ui/Button";
+import StepIndicator from "@/components/configure/StepIndicator";
 
 export default function CartPage() {
   const router = useRouter();
@@ -38,7 +39,8 @@ export default function CartPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-5 py-10 md:py-14">
-      <h1 className="text-display text-2xl text-text md:text-3xl">Your cart</h1>
+      <StepIndicator current={3} />
+      <h1 className="mt-8 text-display text-2xl text-text md:text-3xl">Your cart</h1>
 
       <div className="mt-8 grid grid-cols-1 gap-10 lg:grid-cols-[1fr_360px]">
         <div className="flex flex-col gap-3">

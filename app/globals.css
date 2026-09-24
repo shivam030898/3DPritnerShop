@@ -3,17 +3,17 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  --color-bg: #fafafa;
+  --color-bg: #fafaf8;
   --color-surface: #ffffff;
-  --color-surface-2: #f2f2f0;
-  --color-border: #e6e6e3;
+  --color-surface-2: #f2f2ef;
+  --color-border: #e5e5e2;
   --color-border-strong: #d4d4d0;
-  --color-text: #0b0b0c;
+  --color-text: #111111;
   --color-text-dim: #6b6b6f;
-  --color-text-faint: #9a9a9d;
-  --color-accent: #ff5a1f;
-  --color-accent-soft: #fff1ea;
-  --color-accent-line: rgba(255, 90, 31, 0.35);
+  --color-text-faint: #777777;
+  --color-accent: #1039fc;
+  --color-accent-soft: #eaedff;
+  --color-accent-line: rgba(16, 57, 252, 0.32);
   --color-success: #1a8f4c;
   --color-success-soft: #eaf7ee;
   --color-danger: #d1352b;
@@ -34,10 +34,10 @@
   --color-border-strong: #313135;
   --color-text: #f2f2f0;
   --color-text-dim: #a3a3a6;
-  --color-text-faint: #707074;
-  --color-accent: #ff6b35;
-  --color-accent-soft: rgba(255, 107, 53, 0.14);
-  --color-accent-line: rgba(255, 107, 53, 0.4);
+  --color-text-faint: #85858a;
+  --color-accent: #4d6bff;
+  --color-accent-soft: rgba(77, 107, 255, 0.16);
+  --color-accent-line: rgba(77, 107, 255, 0.4);
   --color-success: #3ddc84;
   --color-success-soft: rgba(61, 220, 132, 0.14);
   --color-danger: #ff5c52;

@@ -8,6 +8,35 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Role {
+  USER
+  ADMIN
+}
+
+enum ModelSourceType {
+  UPLOAD
+  PRINTABLES
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  IN_QUEUE
+  PRINTING
+  QUALITY_CHECK
+  PACKED
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
 model User {
   id            String    @id @default(cuid())
   name          String?
@@ -16,6 +45,7 @@ model User {
   image         String?
   phone         String?
   passwordHash  String?
+  role          Role      @default(USER)
   createdAt     DateTime  @default(now())
 
   accounts      Account[]
@@ -86,28 +116,31 @@ model Design {
 }
 
 model CartItem {
-  id          String   @id @default(cuid())
-  userId      String
-  configKey   String
-  type        String // "product" | "custom"
-  slug        String? // marketplace product slug
-  imageId     String? // marketplace product preview image
-  name        String
-  fileName    String?
-  fileUrl     String?
-  fileType    String?
-  statsJson   String? // serialized GeometryStats for custom prints
-  material    String?
-  color       String?
-  quality     String?
-  sizeLabel   String? // "Small" | "Medium" | "Large"
-  widthMm     Float?
-  depthMm     Float?
-  heightMm    Float?
-  quantity    Int
-  unitPrice   Int
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id              String           @id @default(cuid())
+  userId          String
+  configKey       String
+  type            String // "product" | "custom"
+  slug            String? // marketplace product slug
+  imageId         String? // marketplace product preview image
+  name            String
+  fileName        String?
+  fileUrl         String?
+  fileType        String?
+  statsJson       String? // serialized GeometryStats for custom prints
+  modelSourceType ModelSourceType? // set only for "custom" items: UPLOAD | PRINTABLES
+  printablesUrl   String? // set only when modelSourceType = PRINTABLES
+  notes           String? // customer's additional print instructions
+  material        String?
+  color           String?
+  quality         String?
+  sizeLabel       String? // "Small" | "Medium" | "Large"
+  widthMm         Float?
+  depthMm         Float?
+  heightMm        Float?
+  quantity        Int
+  unitPrice       Int
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -141,13 +174,16 @@ model Address {
 }
 
 model Order {
-  id              String   @id @default(cuid())
-  orderNumber     String   @unique
+  id              String           @id @default(cuid())
+  orderNumber     String           @unique
   userId          String
   designId        String?
   productSlug     String?
   itemName        String
   itemType        String
+  modelSourceType ModelSourceType? // set only for "custom" items: UPLOAD | PRINTABLES
+  printablesUrl   String? // set only when modelSourceType = PRINTABLES
+  notes           String? // customer's additional print instructions
   material        String?
   color           String?
   quality         String?
@@ -161,24 +197,26 @@ model Order {
   shipping        Int
   total           Int
   paymentMethod   String
-  paymentStatus   String   @default("paid")
+  paymentStatus   PaymentStatus    @default(PAID)
+  status          OrderStatus      @default(PENDING)
   addressId       String?
   addressSnapshot String
   trackingNumber  String
   carrier         String
-  createdAt       DateTime @default(now())
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
 
-  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  design        Design?       @relation(fields: [designId], references: [id])
-  address       Address?      @relation(fields: [addressId], references: [id])
-  statusHistory StatusEvent[]
+  user          User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  design        Design?              @relation(fields: [designId], references: [id])
+  address       Address?             @relation(fields: [addressId], references: [id])
+  statusHistory OrderStatusHistory[]
 }
 
-model StatusEvent {
-  id        String   @id @default(cuid())
+model OrderStatusHistory {
+  id        String      @id @default(cuid())
   orderId   String
-  stage     String
-  timestamp DateTime
+  status    OrderStatus
+  createdAt DateTime    @default(now())
 
   order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
 }

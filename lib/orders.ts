@@ -1,61 +1,43 @@
-export const ORDER_STAGES = [
-  {
-    key: "placed",
-    label: "Order placed",
-    offsetHours: 0,
-    description: "We've received your order and confirmed payment.",
-  },
-  {
-    key: "review",
-    label: "Design review",
-    offsetHours: 0.1,
-    description: "Your file passed our automated print-readiness check.",
-  },
-  {
-    key: "queued",
-    label: "Queued",
-    offsetHours: 1,
-    description: "Your order is in the production queue.",
-  },
-  {
-    key: "printing",
-    label: "Printing",
-    offsetHours: 3,
-    description: "Your model is currently being printed.",
-  },
-  {
-    key: "quality",
-    label: "Quality check",
-    offsetHours: 26,
-    description: "A technician is inspecting the finished print.",
-  },
-  {
-    key: "packed",
-    label: "Packed",
-    offsetHours: 34,
-    description: "Your order is boxed and ready for pickup.",
-  },
-  {
-    key: "shipped",
-    label: "Shipped",
-    offsetHours: 48,
-    description: "Your package has left our facility.",
-  },
-  {
-    key: "out_for_delivery",
-    label: "Out for delivery",
-    offsetHours: 90,
-    description: "Your package is on a vehicle headed your way.",
-  },
-  {
-    key: "delivered",
-    label: "Delivered",
-    offsetHours: 96,
-    description: "Your package has been delivered.",
-  },
-] as const;
+import type { OrderStatus } from "@/lib/generated/prisma";
 
-export type OrderStageKey = (typeof ORDER_STAGES)[number]["key"];
+/**
+ * The canonical customer-facing progress ladder. CANCELLED is a distinct
+ * terminal state, not a rung on this ladder — see getOrderStageIndex.
+ */
+export const ORDER_STATUS_SEQUENCE: OrderStatus[] = [
+  "PENDING",
+  "CONFIRMED",
+  "IN_QUEUE",
+  "PRINTING",
+  "QUALITY_CHECK",
+  "PACKED",
+  "SHIPPED",
+  "DELIVERED",
+];
+
+export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
+  PENDING: "Order placed",
+  CONFIRMED: "Confirmed",
+  IN_QUEUE: "In queue",
+  PRINTING: "Printing",
+  QUALITY_CHECK: "Quality check",
+  PACKED: "Packed",
+  SHIPPED: "Shipped",
+  DELIVERED: "Delivered",
+  CANCELLED: "Cancelled",
+};
+
+export const ORDER_STATUS_DESCRIPTIONS: Record<OrderStatus, string> = {
+  PENDING: "We've received your order and confirmed payment.",
+  CONFIRMED: "Your order has been reviewed and confirmed for production.",
+  IN_QUEUE: "Your order is in the production queue.",
+  PRINTING: "Your model is currently being printed.",
+  QUALITY_CHECK: "A technician is inspecting the finished print.",
+  PACKED: "Your order is boxed and ready for pickup.",
+  SHIPPED: "Your package has left our facility.",
+  DELIVERED: "Your package has been delivered.",
+  CANCELLED: "This order has been cancelled.",
+};
 
 export function generateOrderId() {
   const n = Math.floor(10000 + Math.random() * 89999);
@@ -67,21 +49,15 @@ export function generateTrackingNumber() {
   return `TRK-${n}`;
 }
 
-type HasCreatedAt = { createdAt: Date | string };
-
-export function getOrderStageIndex(order: HasCreatedAt, now: Date = new Date()): number {
-  const elapsedHours =
-    (now.getTime() - new Date(order.createdAt).getTime()) / (1000 * 60 * 60);
-  let index = 0;
-  for (let i = 0; i < ORDER_STAGES.length; i++) {
-    if (elapsedHours >= ORDER_STAGES[i].offsetHours) index = i;
-  }
-  return index;
+/** Index into ORDER_STATUS_SEQUENCE, or -1 for a cancelled order (not part of the linear ladder). */
+export function getOrderStageIndex(order: { status: OrderStatus }): number {
+  if (order.status === "CANCELLED") return -1;
+  return ORDER_STATUS_SEQUENCE.indexOf(order.status);
 }
 
+type HasCreatedAt = { createdAt: Date | string };
+
+/** A rough, clearly-labeled estimate — we no longer simulate a precise per-stage timeline. */
 export function getEstimatedDelivery(order: HasCreatedAt): Date {
-  const deliveredOffset = ORDER_STAGES[ORDER_STAGES.length - 1].offsetHours;
-  return new Date(
-    new Date(order.createdAt).getTime() + deliveredOffset * 60 * 60 * 1000
-  );
+  return new Date(new Date(order.createdAt).getTime() + 4 * 24 * 60 * 60 * 1000);
 }

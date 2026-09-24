@@ -31,7 +31,7 @@ export default function SupportFAQ() {
   const [open, setOpen] = useState<number | null>(0);
 
   return (
-    <section>
+    <section id="faq" className="scroll-mt-20">
       <p className="text-sm font-medium text-text">Common questions</p>
 
       <div className="mt-4 border-t border-border">

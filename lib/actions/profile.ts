@@ -2,7 +2,7 @@
 
 import { auth, signOut } from "@/auth";
 import { db } from "@/lib/db";
-import { ORDER_STAGES, getOrderStageIndex } from "@/lib/orders";
+import { ORDER_STATUS_SEQUENCE, getOrderStageIndex } from "@/lib/orders";
 import { normalizePhone } from "@/lib/phone";
 
 export async function getProfileStats() {
@@ -11,11 +11,11 @@ export async function getProfileStats() {
 
   const orders = await db.order.findMany({
     where: { userId: session.user.id },
-    select: { createdAt: true },
+    select: { status: true },
   });
   const designs = await db.design.count({ where: { userId: session.user.id } });
 
-  const deliveredIndex = ORDER_STAGES.length - 1;
+  const deliveredIndex = ORDER_STATUS_SEQUENCE.length - 1;
   let inProduction = 0;
   let delivered = 0;
   for (const order of orders) {

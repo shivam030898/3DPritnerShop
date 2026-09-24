@@ -1,18 +1,18 @@
 "use client";
 
-import type { CurrentUpload, CurrentConfig } from "./store";
+import type { ModelInput, CurrentConfig } from "./store";
 
 const KEY = "forma-resume-upload";
 const TTL_MS = 30 * 60 * 1000;
 
 type ResumePayload = {
-  upload: CurrentUpload;
+  model: ModelInput;
   config: CurrentConfig;
   savedAt: number;
 };
 
-export function saveResumeUpload(upload: CurrentUpload, config: CurrentConfig) {
-  const payload: ResumePayload = { upload, config, savedAt: Date.now() };
+export function saveResumeUpload(model: ModelInput, config: CurrentConfig) {
+  const payload: ResumePayload = { model, config, savedAt: Date.now() };
   try {
     localStorage.setItem(KEY, JSON.stringify(payload));
   } catch {
@@ -20,7 +20,7 @@ export function saveResumeUpload(upload: CurrentUpload, config: CurrentConfig) {
   }
 }
 
-export function loadResumeUpload(): { upload: CurrentUpload; config: CurrentConfig } | null {
+export function loadResumeUpload(): { model: ModelInput; config: CurrentConfig } | null {
   try {
     const raw = localStorage.getItem(KEY);
     if (!raw) return null;
@@ -29,7 +29,7 @@ export function loadResumeUpload(): { upload: CurrentUpload; config: CurrentConf
       localStorage.removeItem(KEY);
       return null;
     }
-    return { upload: parsed.upload, config: parsed.config };
+    return { model: parsed.model, config: parsed.config };
   } catch {
     return null;
   }

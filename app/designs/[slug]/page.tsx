@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { notFound, useRouter } from "next/navigation";
 import { Check, Star, Truck } from "lucide-react";
-import { PRODUCTS, COLORS, unsplashUrl, type ColorKey } from "@/lib/constants";
+import { PRODUCTS, COLORS, productImage, type ColorKey } from "@/lib/constants";
 import { useCart } from "@/lib/useCart";
 import { getProductSizeOptions, formatDimensionsMm, type SizeKey } from "@/lib/productSize";
 import { formatINR, cn } from "@/lib/utils";
@@ -59,7 +59,7 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
       <div className="grid grid-cols-1 gap-10 lg:grid-cols-2 lg:gap-16">
         <div className="relative aspect-square overflow-hidden rounded-xl bg-surface-2">
           <Image
-            src={unsplashUrl(product.imageId, 900)}
+            src={productImage(product.imageId)}
             alt={product.name}
             fill
             sizes="(max-width: 1024px) 100vw, 50vw"

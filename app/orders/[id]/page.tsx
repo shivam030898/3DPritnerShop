@@ -2,9 +2,9 @@ import Link from "next/link";
 import Image from "next/image";
 import { Truck, Box } from "lucide-react";
 import { getOrderByNumber } from "@/lib/actions/orders";
-import { getOrderStageIndex, getEstimatedDelivery, ORDER_STAGES } from "@/lib/orders";
+import { getOrderStageIndex, getEstimatedDelivery, ORDER_STATUS_SEQUENCE, ORDER_STATUS_LABELS, ORDER_STATUS_DESCRIPTIONS } from "@/lib/orders";
 import { formatDate, formatINR } from "@/lib/utils";
-import { PRODUCTS, unsplashUrl, COLORS, MATERIALS } from "@/lib/constants";
+import { PRODUCTS, productImage, COLORS, MATERIALS } from "@/lib/constants";
 import { formatDimensionsMm } from "@/lib/productSize";
 import OrderTimeline from "@/components/orders/OrderTimeline";
 import Badge from "@/components/ui/Badge";
@@ -29,10 +29,10 @@ export default async function OrderTrackingPage({
     );
   }
 
+  const cancelled = order.status === "CANCELLED";
   const stageIndex = getOrderStageIndex(order);
-  const stage = ORDER_STAGES[stageIndex];
-  const delivered = stageIndex === ORDER_STAGES.length - 1;
-  const shipped = stageIndex >= ORDER_STAGES.findIndex((s) => s.key === "shipped");
+  const delivered = stageIndex === ORDER_STATUS_SEQUENCE.length - 1;
+  const shipped = !cancelled && stageIndex >= ORDER_STATUS_SEQUENCE.indexOf("SHIPPED");
   const address = JSON.parse(order.addressSnapshot) as {
     name: string;
     line1: string;
@@ -54,7 +54,7 @@ export default async function OrderTrackingPage({
         <div className="flex items-center gap-4">
           <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-surface-2">
             {product ? (
-              <Image src={unsplashUrl(product.imageId, 200)} alt="" width={56} height={56} className="h-full w-full object-cover" />
+              <Image src={productImage(product.imageId)} alt="" width={56} height={56} className="h-full w-full object-cover" />
             ) : (
               <Box size={20} className="text-text-faint" />
             )}
@@ -64,13 +64,15 @@ export default async function OrderTrackingPage({
             <h1 className="text-display mt-0.5 text-xl text-text md:text-2xl">{order.itemName}</h1>
           </div>
         </div>
-        <Badge tone={delivered ? "success" : "accent"}>{stage.label}</Badge>
+        <Badge tone={cancelled ? "danger" : delivered ? "success" : "accent"}>
+          {ORDER_STATUS_LABELS[order.status]}
+        </Badge>
       </div>
 
-      <p className="mt-3 text-sm text-text-dim">{stage.description}</p>
+      <p className="mt-3 text-sm text-text-dim">{ORDER_STATUS_DESCRIPTIONS[order.status]}</p>
 
       <div className="mt-10 overflow-x-auto rounded-xl border border-border bg-surface p-6">
-        <OrderTimeline order={order} />
+        <OrderTimeline order={order} history={order.statusHistory} />
       </div>
 
       <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2">

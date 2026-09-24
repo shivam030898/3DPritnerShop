@@ -12,13 +12,14 @@ import { toast } from "@/lib/toastStore";
 
 export default function SavedDesignCard({ design }: { design: Design }) {
   const router = useRouter();
-  const setCurrentUpload = useStore((s) => s.setCurrentUpload);
+  const setCurrentModel = useStore((s) => s.setCurrentModel);
   const setCurrentConfig = useStore((s) => s.setCurrentConfig);
   const [deleting, setDeleting] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   const handlePrintAgain = () => {
-    setCurrentUpload({
+    setCurrentModel({
+      type: "upload",
       fileName: design.name,
       fileType: (design.fileType as "stl" | "obj" | "3mf") ?? "stl",
       fileURL: design.fileUrl,

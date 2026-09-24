@@ -1,6 +1,6 @@
-import Image from "next/image";
 import Link from "next/link";
 import { FOOTER_LINKS, SOCIAL_LINKS, BRAND } from "@/lib/constants";
+import FormaLogo from "@/components/brand/FormaLogo";
 
 export default function Footer() {
   return (
@@ -8,10 +8,7 @@ export default function Footer() {
       <div className="mx-auto max-w-[1400px]">
         <div className="grid grid-cols-2 gap-8 sm:grid-cols-4">
           <div className="col-span-2 sm:col-span-1">
-            <span className="flex items-center gap-2 text-display text-lg text-text">
-              <Image src="/images/logo-v3.png" alt="" width={24} height={24} className="h-6 w-6" />
-              {BRAND.name}
-            </span>
+            <FormaLogo iconClassName="h-6 w-6" />
             <p className="mt-2 max-w-[22ch] text-sm text-text-dim">
               Upload a design. We print, finish and deliver it.
             </p>

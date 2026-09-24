@@ -26,10 +26,16 @@ export type CartLineItem = {
   /** JSON.stringify(GeometryStats) — preserved so an Order/Design can be recreated at checkout. */
   statsJson?: string;
 
+  // Custom/Printables-link print fields — set only when the model source is
+  // a pasted Printables URL rather than an uploaded file.
+  modelSourceType?: "UPLOAD" | "PRINTABLES";
+  printablesUrl?: string;
+
   // Shared configuration
   material?: MaterialKey;
   color?: ColorKey;
   quality?: QualityKey;
+  notes?: string;
 
   // Structured print size — two copies of the same design at different
   // sizes are different purchasable configurations, never merged together.
@@ -42,10 +48,18 @@ export type CartLineItem = {
 export type NewCartItem = Omit<CartLineItem, "configKey" | "quantity"> & { quantity?: number };
 
 export function buildConfigKey(
-  item: Pick<CartLineItem, "type" | "slug" | "fileUrl" | "material" | "color" | "quality" | "sizeLabel">
+  item: Pick<
+    CartLineItem,
+    "type" | "slug" | "fileUrl" | "modelSourceType" | "printablesUrl" | "material" | "color" | "quality" | "sizeLabel"
+  >
 ): string {
   if (item.type === "product") {
     return ["product", item.slug, item.color, item.sizeLabel].join("::");
+  }
+  if (item.modelSourceType === "PRINTABLES") {
+    return ["custom", "printables", item.printablesUrl, item.material, item.color, item.quality, item.sizeLabel].join(
+      "::"
+    );
   }
   return ["custom", item.fileUrl, item.material, item.color, item.quality, item.sizeLabel].join("::");
 }

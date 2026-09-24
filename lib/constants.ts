@@ -5,10 +5,11 @@ export const BRAND = {
 };
 
 export const NAV_LINKS = [
-  { label: "How it works", href: "/#how-it-works" },
+  { label: "Shop", href: "/#shop" },
   { label: "Designs", href: "/designs" },
+  { label: "Upload & Print", href: "/upload" },
   { label: "Materials", href: "/materials" },
-  { label: "Track Order", href: "/track" },
+  { label: "How It Works", href: "/#how-it-works" },
 ];
 
 export type MaterialKey = "pla" | "petg" | "abs" | "tpu" | "resin";
@@ -117,24 +118,24 @@ export type ProductCategory =
   | "functional";
 
 export const CATEGORIES: { key: ProductCategory; label: string; imageId: string }[] = [
-  { key: "anime", label: "Anime", imageId: "1612380318869-7925b91da6ba" },
-  { key: "superhero", label: "Superhero", imageId: "1634861949375-3fc4bd412f2f" },
-  { key: "gaming", label: "Gaming", imageId: "1643489069237-3548135218c8" },
-  { key: "collectibles", label: "Collectibles", imageId: "1695747001087-417e0d9abd68" },
-  { key: "desk", label: "Desk", imageId: "1751107756601-66fa542b0e3c" },
-  { key: "home", label: "Home", imageId: "1618220179428-22790b461013" },
-  { key: "cosplay", label: "Cosplay", imageId: "1680657437578-b514959cdb6e" },
-  { key: "functional", label: "Functional", imageId: "1698314440014-3badb1e9c938" },
+  { key: "anime", label: "Anime", imageId: "cyber-samurai" },
+  { key: "gaming", label: "Gaming", imageId: "retro-pixel-blaster" },
+  { key: "collectibles", label: "Collectibles", imageId: "nebula-fox" },
+  { key: "desk", label: "Desk", imageId: "modular-desk-organizer" },
+  { key: "home", label: "Home", imageId: "lofi-cat-planter" },
+  { key: "cosplay", label: "Cosplay", imageId: "circuit-visor" },
+  { key: "functional", label: "Functional", imageId: "wireless-charge-dock" },
 ];
 
 /**
- * Placeholder product photography sourced from Unsplash (free license) for
- * prototyping. Swap `imageId` values for your own licensed product photos —
+ * Real photos of prints we've actually produced, stored at
+ * public/media/products/<imageId>.jpg. `imageId` doubles as the filename —
  * everything downstream (product cards, product pages, next/image sizing)
- * reads through this one field, so no other code needs to change.
+ * reads through this one function, so swapping a photo means replacing the
+ * file, not touching any component.
  */
-export function unsplashUrl(imageId: string, width = 800) {
-  return `https://images.unsplash.com/photo-${imageId}?w=${width}&q=80&auto=format&fit=crop`;
+export function productImage(imageId: string) {
+  return `/media/products/${imageId}.jpg`;
 }
 
 export type Product = {
@@ -163,158 +164,142 @@ export type Product = {
 export const PRODUCTS: Product[] = [
   {
     slug: "cyber-samurai",
-    name: "Cyber Samurai",
+    name: "Kunai",
     category: "anime",
     material: "pla",
-    baseDimensionsMm: { width: 60, depth: 45, height: 120 },
-    fillFactor: 0.2,
+    baseDimensionsMm: { width: 220, depth: 35, height: 10 },
+    fillFactor: 0.4,
     rating: 4.8,
     reviewCount: 214,
     colors: ["black", "white", "red"],
     description:
-      "An original armored warrior design blending traditional samurai silhouettes with a neo-tech aesthetic. Cast in fine layer resolution for crisp panel lines.",
+      "A classic ninja throwing-knife prop, cast with a crisp edge profile and balanced grip taper. Convention-ready straight off the bed.",
     creator: "Studio Ronin",
-    imageId: "1612380318869-7925b91da6ba",
+    imageId: "cyber-samurai",
   },
   {
     slug: "nebula-fox",
-    name: "Nebula Fox",
+    name: "Tentacle",
     category: "collectibles",
     material: "resin",
-    baseDimensionsMm: { width: 55, depth: 65, height: 90 },
+    baseDimensionsMm: { width: 70, depth: 70, height: 150 },
     fillFactor: 0.22,
     rating: 4.9,
     reviewCount: 388,
     colors: ["white", "blue"],
     description:
-      "A stylised fox miniature with a constellation-etched coat, printed in resin for painter-ready detail.",
+      "A sculptural tentacle piece with fine suction-cup detail, printed in resin for a smooth, painter-ready surface.",
     creator: "Lumen Forge",
-    imageId: "1695747001087-417e0d9abd68",
-  },
-  {
-    slug: "aether-guardian-bust",
-    name: "Aether Guardian Bust",
-    category: "superhero",
-    material: "pla",
-    baseDimensionsMm: { width: 110, depth: 95, height: 180 },
-    fillFactor: 0.18,
-    rating: 4.7,
-    reviewCount: 156,
-    colors: ["black", "white"],
-    description:
-      "An original caped-guardian bust for display — heroic proportions, sculpted from scratch by an independent creator, not affiliated with any studio or publisher.",
-    creator: "Vantage Collective",
-    imageId: "1634861949375-3fc4bd412f2f",
+    imageId: "nebula-fox",
   },
   {
     slug: "retro-pixel-blaster",
-    name: "Retro Pixel Blaster",
+    name: "Shuriken (4-Point)",
     category: "gaming",
     material: "petg",
-    baseDimensionsMm: { width: 220, depth: 45, height: 70 },
-    fillFactor: 0.14,
+    baseDimensionsMm: { width: 90, depth: 90, height: 6 },
+    fillFactor: 0.55,
     rating: 4.6,
     reviewCount: 97,
     colors: ["black", "red", "blue"],
     description:
-      "A chunky, 16-bit-inspired prop blaster built for shelf display or convention cosplay. Snap-fit, no glue required.",
+      "A four-point throwing star with sharpened-look edges, cast flat and true for display or prop use.",
     creator: "Pixel Foundry",
-    imageId: "1643489069237-3548135218c8",
+    imageId: "retro-pixel-blaster",
   },
   {
     slug: "modular-desk-organizer",
-    name: "Modular Desk Organizer",
+    name: "Pen Holder Figure",
     category: "desk",
     material: "petg",
-    baseDimensionsMm: { width: 140, depth: 95, height: 40 },
-    fillFactor: 0.16,
+    baseDimensionsMm: { width: 85, depth: 85, height: 140 },
+    fillFactor: 0.18,
     rating: 4.9,
     reviewCount: 512,
     colors: ["black", "white"],
     description:
-      "A stackable, tool-free desk tray system. Add modules as your setup grows.",
+      "A sculpted desk figure that doubles as a pen holder — one part display piece, one part daily tool.",
     creator: "FORMA Studio",
-    imageId: "1751107756601-66fa542b0e3c",
+    imageId: "modular-desk-organizer",
   },
   {
     slug: "lofi-cat-planter",
-    name: "Lo-Fi Cat Planter",
+    name: "Corset Vase",
     category: "home",
     material: "pla",
-    baseDimensionsMm: { width: 100, depth: 55, height: 70 },
-    fillFactor: 0.15,
+    baseDimensionsMm: { width: 95, depth: 95, height: 180 },
+    fillFactor: 0.12,
     rating: 4.8,
     reviewCount: 301,
     colors: ["white", "black"],
     description:
-      "A quietly-detailed planter shaped like a cat mid-stretch. Drainage-ready, fits a 4-inch succulent.",
+      "A vase with a laced, corset-inspired silhouette. Watertight print, fits standard cut stems.",
     creator: "Studio Quiet",
-    imageId: "1618220179428-22790b461013",
+    imageId: "lofi-cat-planter",
   },
   {
     slug: "circuit-visor",
-    name: "Circuit Visor",
+    name: "Shuriken (8-Point)",
     category: "cosplay",
     material: "abs",
-    baseDimensionsMm: { width: 200, depth: 55, height: 85 },
-    fillFactor: 0.1,
+    baseDimensionsMm: { width: 100, depth: 100, height: 6 },
+    fillFactor: 0.5,
     rating: 4.5,
     reviewCount: 64,
     colors: ["black"],
     description:
-      "A wearable convention-ready visor with an etched circuit motif. Adjustable strap mount included.",
+      "An eight-point throwing star with an intricate layered profile, built for convention props and shelf display alike.",
     creator: "Pixel Foundry",
-    imageId: "1680657437578-b514959cdb6e",
+    imageId: "circuit-visor",
   },
   {
     slug: "gravity-dice-tower",
-    name: "Gravity Dice Tower",
-    category: "gaming",
+    name: "Shuriken (3-Point)",
+    category: "cosplay",
     material: "pla",
-    baseDimensionsMm: { width: 65, depth: 65, height: 160 },
-    fillFactor: 0.12,
+    baseDimensionsMm: { width: 85, depth: 85, height: 6 },
+    fillFactor: 0.55,
     rating: 4.7,
     reviewCount: 178,
     colors: ["black", "white", "blue"],
     description:
-      "A tabletop dice tower with an internal spiral ramp for a satisfying, fair roll every time.",
+      "A minimal three-point throwing star, quick to print and finished with a clean beveled edge.",
     creator: "Vantage Collective",
-    imageId: "1666870747605-cca30ed154c5",
+    imageId: "gravity-dice-tower",
   },
   {
     slug: "wireless-charge-dock",
-    name: "Wireless Charge Dock",
+    name: "Celtic Coaster",
     category: "functional",
     material: "petg",
-    baseDimensionsMm: { width: 110, depth: 85, height: 35 },
-    fillFactor: 0.3,
+    baseDimensionsMm: { width: 100, depth: 100, height: 8 },
+    fillFactor: 0.6,
     rating: 4.6,
     reviewCount: 132,
     colors: ["black", "white"],
     description:
-      "A tidy angled dock that hides your wireless charger under a clean, cable-managed shell.",
+      "A knotwork coaster with a raised Celtic border, cast flat for a stable, coffee-ring-proof surface.",
     creator: "FORMA Studio",
-    imageId: "1698314440014-3badb1e9c938",
+    imageId: "wireless-charge-dock",
   },
 ];
 
 export const FOOTER_LINKS = {
-  Product: [
-    { label: "Upload a design", href: "/upload" },
-    { label: "Browse designs", href: "/designs" },
+  Shop: [
+    { label: "Designs", href: "/designs" },
+    { label: "Upload & Print", href: "/upload" },
     { label: "Materials", href: "/materials" },
-    { label: "Track an order", href: "/track" },
+    { label: "Track Order", href: "/track" },
   ],
-  Company: [
-    { label: "How it works", href: "/#how-it-works" },
-    { label: "Help center", href: "/support" },
+  Help: [
+    { label: "FAQ", href: "/support#faq" },
+    { label: "Shipping", href: "/support" },
+    { label: "Returns", href: "/support" },
     { label: "Contact", href: "/support" },
   ],
   Account: [
-    { label: "My orders", href: "/account/orders" },
-    { label: "My designs", href: "/account/designs" },
-    { label: "Saved", href: "/account/saved" },
-    { label: "Addresses", href: "/account/addresses" },
+    { label: "Orders", href: "/account/orders" },
+    { label: "Profile", href: "/account/settings" },
   ],
 };
 

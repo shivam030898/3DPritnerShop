@@ -16,6 +16,7 @@ import CartOrderSummary from "@/components/checkout/CartOrderSummary";
 import OrderConfirmed from "@/components/checkout/OrderConfirmed";
 import SavedAddressPicker from "@/components/checkout/SavedAddressPicker";
 import EmailVerifyPanel from "@/components/account/EmailVerifyPanel";
+import StepIndicator from "@/components/configure/StepIndicator";
 import { cn } from "@/lib/utils";
 
 const PAYMENT_METHODS = ["UPI", "Card", "Net Banking", "Wallet"];
@@ -197,7 +198,8 @@ export default function CheckoutPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-5 py-10 md:py-14">
-      <h1 className="text-display text-2xl text-text md:text-3xl">Checkout</h1>
+      <StepIndicator current={4} />
+      <h1 className="mt-8 text-display text-2xl text-text md:text-3xl">Checkout</h1>
 
       <div className="mt-8 grid grid-cols-1 gap-10 lg:grid-cols-[1fr_380px]">
         <form onSubmit={handleSubmit} className="flex flex-col gap-10">

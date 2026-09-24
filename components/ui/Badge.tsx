@@ -1,11 +1,12 @@
 import { cn } from "@/lib/utils";
 
-type Tone = "neutral" | "accent" | "success";
+type Tone = "neutral" | "accent" | "success" | "danger";
 
 const TONE_CLASSES: Record<Tone, string> = {
   neutral: "bg-surface-2 text-text-dim",
   accent: "bg-accent-soft text-accent",
   success: "bg-success-soft text-success",
+  danger: "bg-danger-soft text-danger",
 };
 
 export default function Badge({

@@ -97,7 +97,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <CartProvider />
             <AccountSetupGate />
             <Navbar />
-            <main className="flex-1">{children}</main>
+            {/* pt-16 compensates for the navbar now being fixed (out of flow) so every
+                page keeps its old top spacing; the homepage hero cancels this itself
+                with -mt-16 so its video can bleed up behind the transparent navbar. */}
+            <main className="flex-1 pt-16">{children}</main>
             <Footer />
             <MobileTabBar />
             <Toaster />

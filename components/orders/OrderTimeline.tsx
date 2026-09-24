@@ -1,26 +1,44 @@
-import { Check } from "lucide-react";
-import { ORDER_STAGES, getOrderStageIndex } from "@/lib/orders";
-import { formatDateTime } from "@/lib/utils";
-import { cn } from "@/lib/utils";
+import { Check, X } from "lucide-react";
+import type { OrderStatus } from "@/lib/generated/prisma";
+import { ORDER_STATUS_SEQUENCE, ORDER_STATUS_LABELS, getOrderStageIndex } from "@/lib/orders";
+import { formatDateTime, cn } from "@/lib/utils";
 
-export default function OrderTimeline({ order }: { order: { createdAt: Date | string } }) {
+type StatusHistoryEntry = { status: OrderStatus; createdAt: Date | string };
+
+export default function OrderTimeline({
+  order,
+  history = [],
+}: {
+  order: { status: OrderStatus };
+  /** Actual OrderStatusHistory rows, if available — used to show when each stage was actually reached. */
+  history?: StatusHistoryEntry[];
+}) {
+  if (order.status === "CANCELLED") {
+    return (
+      <div className="flex items-center gap-3 rounded-lg bg-danger-soft px-4 py-3 text-sm text-danger">
+        <X size={16} className="shrink-0" />
+        This order was cancelled.
+      </div>
+    );
+  }
+
   const currentIndex = getOrderStageIndex(order);
-  const createdAt = new Date(order.createdAt);
+  const reachedAt = (status: OrderStatus) => history.find((h) => h.status === status)?.createdAt;
 
   return (
     <div>
       {/* Desktop: horizontal */}
       <ol className="hidden md:flex md:items-start">
-        {ORDER_STAGES.map((stage, i) => {
+        {ORDER_STATUS_SEQUENCE.map((status, i) => {
           const done = i < currentIndex;
           const current = i === currentIndex;
-          const timestamp = new Date(createdAt.getTime() + stage.offsetHours * 60 * 60 * 1000);
+          const at = reachedAt(status);
 
           return (
-            <li key={stage.key} className="flex flex-1 flex-col items-start">
+            <li key={status} className="flex flex-1 flex-col items-start">
               <div className="flex w-full items-center">
                 <StageDot done={done} current={current} />
-                {i < ORDER_STAGES.length - 1 && (
+                {i < ORDER_STATUS_SEQUENCE.length - 1 && (
                   <span
                     className={cn(
                       "h-px flex-1",
@@ -30,10 +48,10 @@ export default function OrderTimeline({ order }: { order: { createdAt: Date | st
                 )}
               </div>
               <p className={cn("mt-3 text-xs font-medium", done || current ? "text-text" : "text-text-faint")}>
-                {stage.label}
+                {ORDER_STATUS_LABELS[status]}
               </p>
-              {(done || current) && (
-                <p className="mt-0.5 text-[11px] text-text-faint">{formatDateTime(timestamp)}</p>
+              {(done || current) && at && (
+                <p className="mt-0.5 text-[11px] text-text-faint">{formatDateTime(at)}</p>
               )}
             </li>
           );
@@ -42,14 +60,14 @@ export default function OrderTimeline({ order }: { order: { createdAt: Date | st
 
       {/* Mobile: vertical */}
       <ol className="flex flex-col md:hidden">
-        {ORDER_STAGES.map((stage, i) => {
+        {ORDER_STATUS_SEQUENCE.map((status, i) => {
           const done = i < currentIndex;
           const current = i === currentIndex;
-          const timestamp = new Date(createdAt.getTime() + stage.offsetHours * 60 * 60 * 1000);
-          const isLast = i === ORDER_STAGES.length - 1;
+          const isLast = i === ORDER_STATUS_SEQUENCE.length - 1;
+          const at = reachedAt(status);
 
           return (
-            <li key={stage.key} className="flex gap-3">
+            <li key={status} className="flex gap-3">
               <div className="flex flex-col items-center">
                 <StageDot done={done} current={current} />
                 {!isLast && (
@@ -58,13 +76,10 @@ export default function OrderTimeline({ order }: { order: { createdAt: Date | st
               </div>
               <div className="pb-6">
                 <p className={cn("text-sm font-medium", done || current ? "text-text" : "text-text-faint")}>
-                  {stage.label}
+                  {ORDER_STATUS_LABELS[status]}
                 </p>
-                {(done || current) && (
-                  <>
-                    <p className="mt-0.5 text-xs text-text-faint">{formatDateTime(timestamp)}</p>
-                    {current && <p className="mt-1 text-xs text-text-dim">{stage.description}</p>}
-                  </>
+                {(done || current) && at && (
+                  <p className="mt-0.5 text-xs text-text-faint">{formatDateTime(at)}</p>
                 )}
               </div>
             </li>

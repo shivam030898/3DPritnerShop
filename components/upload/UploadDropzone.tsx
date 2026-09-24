@@ -7,14 +7,15 @@ import { UploadCloud, AlertCircle, Loader2 } from "lucide-react";
 import { MAX_UPLOAD_MB, SUPPORTED_FORMATS } from "@/lib/constants";
 import { detectFileType } from "@/lib/fileType";
 import { useStore } from "@/lib/store";
+import { cn } from "@/lib/utils";
 
-export default function UploadDropzone() {
+export default function UploadDropzone({ compact = false }: { compact?: boolean }) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
   const [status, setStatus] = useState<"idle" | "analyzing" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
-  const setCurrentUpload = useStore((s) => s.setCurrentUpload);
+  const setCurrentModel = useStore((s) => s.setCurrentModel);
 
   const handleFile = useCallback(
     async (file: File) => {
@@ -39,14 +40,14 @@ export default function UploadDropzone() {
         const { parseModelFile } = await import("@/lib/parseModel");
         const stats = await parseModelFile(file, fileType);
         const fileURL = URL.createObjectURL(file);
-        setCurrentUpload({ fileName: file.name, fileType, fileURL, stats });
+        setCurrentModel({ type: "upload", fileName: file.name, fileType, fileURL, stats });
         router.push("/configure");
       } catch {
         setError("We couldn't read this file. Please check it's a valid model and try again.");
         setStatus("error");
       }
     },
-    [router, setCurrentUpload]
+    [router, setCurrentModel]
   );
 
   const onDrop = useCallback(
@@ -73,18 +74,29 @@ export default function UploadDropzone() {
           backgroundColor: dragging ? "var(--color-accent-soft)" : "var(--color-surface)",
         }}
         transition={{ duration: 0.15 }}
-        className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed px-6 py-16 text-center md:py-24"
+        className={cn(
+          "flex flex-col items-center justify-center rounded-2xl border-2 border-dashed text-center",
+          compact ? "gap-0.5 px-5 py-6" : "px-6 py-16 md:py-24"
+        )}
       >
         {status === "analyzing" ? (
           <>
-            <Loader2 size={32} className="animate-spin text-text-dim" strokeWidth={1.5} />
-            <p className="mt-4 text-sm text-text-dim">Analyzing your model…</p>
+            <Loader2
+              size={compact ? 20 : 32}
+              className="animate-spin text-text-dim"
+              strokeWidth={1.5}
+            />
+            <p className={cn("text-text-dim", compact ? "mt-2 text-xs" : "mt-4 text-sm")}>
+              Analyzing your model…
+            </p>
           </>
         ) : (
           <>
-            <UploadCloud size={32} strokeWidth={1.5} className="text-text-dim" />
-            <p className="mt-4 text-lg text-text">Drop your 3D model here</p>
-            <p className="mt-1 text-sm text-text-faint">
+            <UploadCloud size={compact ? 20 : 32} strokeWidth={1.5} className="text-text-dim" />
+            <p className={cn("text-text", compact ? "mt-2 text-sm" : "mt-4 text-lg")}>
+              Drop your 3D model here
+            </p>
+            <p className={cn("text-text-faint", compact ? "text-xs" : "mt-1 text-sm")}>
               or{" "}
               <button
                 type="button"
@@ -94,8 +106,9 @@ export default function UploadDropzone() {
                 browse files
               </button>
             </p>
-            <p className="mt-6 text-xs text-text-faint">
-              Supports {SUPPORTED_FORMATS.join(", ").toUpperCase()} · Max {MAX_UPLOAD_MB}MB
+            <p className={cn("text-text-faint", compact ? "mt-2 text-[10px]" : "mt-6 text-xs")}>
+              {SUPPORTED_FORMATS.join(" · ").toUpperCase()}
+              {!compact && ` · Max ${MAX_UPLOAD_MB}MB`}
             </p>
           </>
         )}

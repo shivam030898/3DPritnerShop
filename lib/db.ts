@@ -18,7 +18,7 @@ if (process.env.NODE_ENV !== "production") {
   // unrelated code the next time a route touches the missing model.
   const expectedDelegates = [
     "user", "account", "session", "design", "cartItem",
-    "savedProduct", "address", "order", "statusEvent", "notification",
+    "savedProduct", "address", "order", "orderStatusHistory", "notification",
   ] as const;
   const missing = expectedDelegates.filter((name) => typeof (db as unknown as Record<string, unknown>)[name] !== "object");
   if (missing.length > 0) {

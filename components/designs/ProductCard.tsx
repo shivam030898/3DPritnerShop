@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Star, ShoppingCart } from "lucide-react";
 import type { Product } from "@/lib/constants";
-import { unsplashUrl } from "@/lib/constants";
+import { productImage } from "@/lib/constants";
 import { formatINR } from "@/lib/utils";
 import { useCart } from "@/lib/useCart";
 import { getProductSizeOptions } from "@/lib/productSize";
@@ -51,7 +51,7 @@ export default function ProductCard({
     <Link href={`/designs/${product.slug}`} className="group flex flex-col">
       <div className="relative aspect-square overflow-hidden rounded-xl bg-surface-2 shadow-card">
         <Image
-          src={unsplashUrl(product.imageId)}
+          src={productImage(product.imageId)}
           alt={product.name}
           fill
           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"

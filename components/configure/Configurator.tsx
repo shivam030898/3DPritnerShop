@@ -3,15 +3,31 @@
 import { Check } from "lucide-react";
 import { MATERIALS, COLORS, QUALITIES } from "@/lib/constants";
 import type { CurrentConfig } from "@/lib/store";
+import type { PrintablesSizeKey } from "@/lib/printablesPricing";
 import QuantityStepper from "@/components/ui/QuantityStepper";
 import { cn } from "@/lib/utils";
+
+const SCALE_OPTIONS = [
+  { value: 1, label: "100%" },
+  { value: 1.25, label: "125%" },
+  { value: 1.5, label: "150%" },
+];
+
+const TIER_OPTIONS: { value: PrintablesSizeKey; label: string }[] = [
+  { value: "small", label: "Small" },
+  { value: "medium", label: "Medium" },
+  { value: "large", label: "Large" },
+];
 
 export default function Configurator({
   config,
   onChange,
+  /** "scale" for a real uploaded model (percent scale of its native size); "tier" for a Printables link (no real geometry, so a coarse Small/Medium/Large size instead). */
+  sizeMode = "scale",
 }: {
   config: CurrentConfig;
   onChange: (patch: Partial<CurrentConfig>) => void;
+  sizeMode?: "scale" | "tier";
 }) {
   return (
     <div className="flex flex-col gap-8">
@@ -107,6 +123,47 @@ export default function Configurator({
       </fieldset>
 
       <fieldset>
+        <legend className="text-sm font-medium text-text">Size</legend>
+        <div className="mt-3 grid grid-cols-3 gap-2">
+          {sizeMode === "scale"
+            ? SCALE_OPTIONS.map((s) => {
+                const active = config.scale === s.value;
+                return (
+                  <button
+                    key={s.value}
+                    type="button"
+                    onClick={() => onChange({ scale: s.value })}
+                    className={cn(
+                      "flex items-center justify-center gap-1 rounded-lg border px-2 py-3 text-sm transition-colors",
+                      active ? "border-text bg-surface-2 text-text" : "border-border-strong text-text-dim hover:border-text-faint"
+                    )}
+                  >
+                    {s.label}
+                    {active && <Check size={14} />}
+                  </button>
+                );
+              })
+            : TIER_OPTIONS.map((t) => {
+                const active = config.sizeTier === t.value;
+                return (
+                  <button
+                    key={t.value}
+                    type="button"
+                    onClick={() => onChange({ sizeTier: t.value })}
+                    className={cn(
+                      "flex items-center justify-center gap-1 rounded-lg border px-2 py-3 text-sm transition-colors",
+                      active ? "border-text bg-surface-2 text-text" : "border-border-strong text-text-dim hover:border-text-faint"
+                    )}
+                  >
+                    {t.label}
+                    {active && <Check size={14} />}
+                  </button>
+                );
+              })}
+        </div>
+      </fieldset>
+
+      <fieldset>
         <legend className="text-sm font-medium text-text">Quantity</legend>
         <div className="mt-3">
           <QuantityStepper
@@ -114,6 +171,18 @@ export default function Configurator({
             onChange={(quantity) => onChange({ quantity })}
           />
         </div>
+      </fieldset>
+
+      <fieldset>
+        <legend className="text-sm font-medium text-text">Additional instructions</legend>
+        <textarea
+          value={config.notes}
+          onChange={(e) => onChange({ notes: e.target.value })}
+          placeholder="Optional — anything we should know before printing this (e.g. orientation, tolerances)."
+          rows={3}
+          maxLength={500}
+          className="mt-3 w-full resize-none rounded-lg border border-border-strong bg-surface px-3.5 py-2.5 text-sm text-text outline-none transition-colors placeholder:text-text-faint focus:border-text"
+        />
       </fieldset>
     </div>
   );

@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { Box, Trash2 } from "lucide-react";
-import { unsplashUrl, COLORS, MATERIALS, QUALITIES } from "@/lib/constants";
+import { productImage, COLORS, MATERIALS, QUALITIES } from "@/lib/constants";
 import { formatINR } from "@/lib/utils";
 import { lineTotal, type CartLineItem } from "@/lib/cart";
 import { formatDimensionsMm } from "@/lib/productSize";
@@ -36,7 +36,7 @@ export default function CartLineCard({
       <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-surface-2">
         {item.type === "product" && item.imageId ? (
           <Image
-            src={unsplashUrl(item.imageId, 200)}
+            src={productImage(item.imageId)}
             alt=""
             width={80}
             height={80}
