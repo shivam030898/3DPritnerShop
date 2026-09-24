@@ -7,7 +7,6 @@ import { useCart } from "@/lib/useCart";
 import { formatINR } from "@/lib/utils";
 import CartLineCard from "@/components/cart/CartLineCard";
 import Button from "@/components/ui/Button";
-import StepIndicator from "@/components/configure/StepIndicator";
 
 export default function CartPage() {
   const router = useRouter();
@@ -29,9 +28,9 @@ export default function CartPage() {
           <ShoppingCart size={24} strokeWidth={1.5} />
         </span>
         <h1 className="text-display mt-6 text-2xl text-text">Your cart is empty</h1>
-        <p className="mt-2 text-text-dim">Browse designs or upload your own model to get started.</p>
+        <p className="mt-2 text-text-dim">Browse the collection to find a piece to bring home.</p>
         <Button as="link" href="/designs" className="mt-8">
-          Explore designs
+          View the collection
         </Button>
       </div>
     );
@@ -39,8 +38,7 @@ export default function CartPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-5 py-10 md:py-14">
-      <StepIndicator current={3} />
-      <h1 className="mt-8 text-display text-2xl text-text md:text-3xl">Your cart</h1>
+      <h1 className="text-display text-2xl text-text md:text-3xl">Your cart</h1>
 
       <div className="mt-8 grid grid-cols-1 gap-10 lg:grid-cols-[1fr_360px]">
         <div className="flex flex-col gap-3">

@@ -24,7 +24,7 @@ export default async function SavedProductsPage() {
           </p>
           <div className="mt-4 flex justify-center">
             <Button as="link" href="/designs" size="sm">
-              Browse designs
+              View the collection
             </Button>
           </div>
         </div>

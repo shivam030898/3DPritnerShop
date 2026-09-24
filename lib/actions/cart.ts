@@ -4,9 +4,7 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import type { CartItem } from "@/lib/generated/prisma";
 import { buildConfigKey, mergeCartItems, type CartLineItem, type NewCartItem } from "@/lib/cart";
-import type { ColorKey, MaterialKey, QualityKey } from "@/lib/constants";
-import { parsePrintablesUrl } from "@/lib/printables";
-import { getPrintablesPriceOption, type PrintablesSizeKey } from "@/lib/printablesPricing";
+import { getProduct } from "@/lib/constants";
 
 export type CartResult = { ok: true; items: CartLineItem[] } | { ok: false; error: string };
 
@@ -15,26 +13,11 @@ const GENERIC_ERROR = "We couldn't update your cart. Please try again.";
 function toLineItem(row: CartItem): CartLineItem {
   return {
     configKey: row.configKey,
-    type: row.type as CartLineItem["type"],
+    slug: row.slug ?? "",
     name: row.name,
+    imageId: row.imageId ?? "",
     quantity: row.quantity,
     unitPrice: row.unitPrice,
-    slug: row.slug ?? undefined,
-    imageId: row.imageId ?? undefined,
-    fileName: row.fileName ?? undefined,
-    fileUrl: row.fileUrl ?? undefined,
-    fileType: (row.fileType as CartLineItem["fileType"]) ?? undefined,
-    statsJson: row.statsJson ?? undefined,
-    modelSourceType: (row.modelSourceType as CartLineItem["modelSourceType"]) ?? undefined,
-    printablesUrl: row.printablesUrl ?? undefined,
-    notes: row.notes ?? undefined,
-    material: (row.material as MaterialKey) ?? undefined,
-    color: (row.color as ColorKey) ?? undefined,
-    quality: (row.quality as QualityKey) ?? undefined,
-    sizeLabel: row.sizeLabel ?? undefined,
-    widthMm: row.widthMm ?? undefined,
-    depthMm: row.depthMm ?? undefined,
-    heightMm: row.heightMm ?? undefined,
   };
 }
 
@@ -42,59 +25,12 @@ function toCartWriteData(userId: string, configKey: string, item: NewCartItem, q
   return {
     userId,
     configKey,
-    type: item.type,
+    type: "product",
     name: item.name,
     quantity,
     unitPrice: item.unitPrice,
     slug: item.slug,
     imageId: item.imageId,
-    fileName: item.fileName,
-    fileUrl: item.fileUrl,
-    fileType: item.fileType,
-    statsJson: item.statsJson,
-    modelSourceType: item.modelSourceType,
-    printablesUrl: item.printablesUrl,
-    notes: item.notes,
-    material: item.material,
-    color: item.color,
-    quality: item.quality,
-    sizeLabel: item.sizeLabel,
-    widthMm: item.widthMm,
-    depthMm: item.depthMm,
-    heightMm: item.heightMm,
-  };
-}
-
-const SIZE_LABEL_TO_TIER: Record<string, PrintablesSizeKey> = {
-  Small: "small",
-  Medium: "medium",
-  Large: "large",
-};
-
-/**
- * A Printables-sourced line has no real geometry, so unlike an uploaded
- * file's price (computed from real parsed volume) its price is a generic
- * size-tier estimate — cheap for a client to fabricate. Never trust it:
- * recompute from the same tier/material/quality/quantity server-side and
- * re-validate the URL, ignoring whatever `unitPrice` the client sent.
- */
-function securePrintablesItem<T extends NewCartItem>(item: T): T | { error: string } {
-  const parsed = parsePrintablesUrl(item.printablesUrl ?? "");
-  if (!parsed.ok) return { error: parsed.error };
-
-  const tier = SIZE_LABEL_TO_TIER[item.sizeLabel ?? ""] ?? "medium";
-  const materialKey = (item.material ?? "pla") as MaterialKey;
-  const qualityKey = (item.quality ?? "standard") as QualityKey;
-  const quantity = item.quantity ?? 1;
-  const option = getPrintablesPriceOption(tier, { materialKey, qualityKey, quantity });
-
-  return {
-    ...item,
-    printablesUrl: parsed.url,
-    unitPrice: option.price.unitCost,
-    widthMm: option.dimensionsMm.width,
-    depthMm: option.dimensionsMm.depth,
-    heightMm: option.dimensionsMm.height,
   };
 }
 
@@ -125,12 +61,11 @@ export async function addToCartAction(rawItem: NewCartItem): Promise<CartResult>
   if (!session?.user?.id) return { ok: true, items: [] };
   const userId = session.user.id;
 
-  let item = rawItem;
-  if (rawItem.modelSourceType === "PRINTABLES") {
-    const secured = securePrintablesItem(rawItem);
-    if ("error" in secured) return { ok: false, error: secured.error };
-    item = secured;
-  }
+  // Never trust a client-supplied price — every cart item is a catalog
+  // product, so re-price it from the catalog itself before writing.
+  const product = getProduct(rawItem.slug);
+  if (!product) return { ok: false, error: "That piece is no longer available." };
+  const item: NewCartItem = { ...rawItem, name: product.name, imageId: product.imageId, unitPrice: product.price };
 
   const configKey = buildConfigKey(item);
   const quantity = item.quantity ?? 1;
@@ -196,15 +131,14 @@ export async function clearCartAction(): Promise<{ ok: boolean }> {
 
 /**
  * Merges a guest (localStorage) cart into the signed-in user's persistent
- * cart. Matching configKeys have their quantities summed; new configKeys
- * are inserted as new rows. Never deletes existing account-cart rows.
+ * cart. Matching configKeys have their quantities summed; new configKeys are
+ * inserted as new rows. Never deletes existing account-cart rows.
  *
  * Idempotent by construction: it recomputes the target quantity per
  * configKey from the current DB rows + the guest snapshot and upserts that
- * total (rather than incrementing), all inside one transaction — so a
- * caller can safely retry with the same guest snapshot without double
- * counting, as long as it only clears the guest snapshot after this
- * resolves `ok: true`.
+ * total (rather than incrementing), all inside one transaction — so a caller
+ * can safely retry with the same guest snapshot without double counting, as
+ * long as it only clears the guest snapshot after this resolves `ok: true`.
  */
 export async function mergeGuestCartAction(guestItems: CartLineItem[]): Promise<CartResult> {
   const session = await auth();
@@ -217,13 +151,15 @@ export async function mergeGuestCartAction(guestItems: CartLineItem[]): Promise<
     }
 
     const existingRows = await getCartRows(userId);
-    const merged = mergeCartItems(existingRows, guestItems)
-      // A guest-cart Printables line's price came from the client with no
-      // server check yet (unlike addToCartAction) — reprice it now, same as
-      // any other new Printables cart write. Drop a line whose URL somehow
-      // no longer validates rather than failing the whole cart merge.
-      .map((item) => (item.modelSourceType === "PRINTABLES" ? securePrintablesItem(item) : item))
-      .filter((item): item is CartLineItem => !("error" in item));
+    // Reprice every incoming line from the catalog — never trust a guest
+    // snapshot's price — and drop any line for a product that no longer exists.
+    const repriced = guestItems
+      .map((item) => {
+        const product = getProduct(item.slug);
+        return product ? { ...item, name: product.name, imageId: product.imageId, unitPrice: product.price } : null;
+      })
+      .filter((item): item is CartLineItem => item !== null);
+    const merged = mergeCartItems(existingRows, repriced);
 
     await db.$transaction(
       merged.map((item) =>

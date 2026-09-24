@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Home, Compass, Upload, Package, User } from "lucide-react";
+import { Home, Compass, ShoppingBag, Package, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function MobileTabBar() {
@@ -12,8 +12,8 @@ export default function MobileTabBar() {
 
   const tabs = [
     { href: "/", label: "Home", icon: Home },
-    { href: "/designs", label: "Explore", icon: Compass },
-    { href: "/upload", label: "Upload", icon: Upload, primary: true },
+    { href: "/designs", label: "Collection", icon: Compass },
+    { href: "/cart", label: "Cart", icon: ShoppingBag, primary: true },
     { href: "/account/orders", label: "Orders", icon: Package },
     {
       href: status === "authenticated" ? "/account" : "/login",

@@ -4,7 +4,7 @@ import { PRODUCTS } from "@/lib/constants";
 const SITE_URL = "https://forma.example.com";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const staticRoutes = ["", "/upload", "/designs", "/materials", "/support", "/track"];
+  const staticRoutes = ["", "/designs", "/support", "/track"];
 
   const productRoutes = PRODUCTS.map((p) => `/designs/${p.slug}`);
 

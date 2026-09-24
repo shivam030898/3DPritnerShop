@@ -1,81 +1,12 @@
 export const BRAND = {
   name: "FORMA",
-  tagline: "Your design. Made real.",
+  tagline: "A curated collection of collectible objects.",
   year: 2026,
 };
 
 export const NAV_LINKS = [
-  { label: "Shop", href: "/#shop" },
-  { label: "Designs", href: "/designs" },
-  { label: "Upload & Print", href: "/upload" },
-  { label: "Materials", href: "/materials" },
-  { label: "How It Works", href: "/#how-it-works" },
-];
-
-export type MaterialKey = "pla" | "petg" | "abs" | "tpu" | "resin";
-
-export type MaterialDef = {
-  key: MaterialKey;
-  name: string;
-  description: string;
-  densityGCm3: number; // grams per cm^3, used for weight estimate
-  /**
-   * ₹ per gram, all-in customer-facing rate (already covers baseline
-   * machine time + margin, matching how Indian FDM print services quote in
-   * practice). A configurable baseline, not a single hardcoded "market
-   * price" — tune per material without touching pricing logic.
-   */
-  costPerGram: number;
-  finish: string;
-  bestFor: string;
-};
-
-export const MATERIALS: MaterialDef[] = [
-  {
-    key: "pla",
-    name: "PLA",
-    description: "Clean, dimensionally stable, and the fastest to produce.",
-    densityGCm3: 1.24,
-    costPerGram: 6,
-    finish: "Matte, fine detail",
-    bestFor: "Display pieces, prototypes, figurines",
-  },
-  {
-    key: "petg",
-    name: "PETG",
-    description: "Tougher than PLA with better heat and impact resistance.",
-    densityGCm3: 1.27,
-    costPerGram: 7,
-    finish: "Semi-gloss",
-    bestFor: "Functional parts, everyday-use objects",
-  },
-  {
-    key: "abs",
-    name: "ABS",
-    description: "Impact-resistant and machinable — built to be handled.",
-    densityGCm3: 1.04,
-    costPerGram: 6.5,
-    finish: "Matte, sandable",
-    bestFor: "Enclosures, mechanical parts",
-  },
-  {
-    key: "tpu",
-    name: "TPU",
-    description: "Rubber-like flexibility that survives repeated bending.",
-    densityGCm3: 1.21,
-    costPerGram: 9.5,
-    finish: "Soft-touch",
-    bestFor: "Grips, wearables, gaskets",
-  },
-  {
-    key: "resin",
-    name: "Resin",
-    description: "The highest resolution finish, for fine detail work.",
-    densityGCm3: 1.1,
-    costPerGram: 13,
-    finish: "Smooth, high detail",
-    bestFor: "Miniatures, jewelry, intricate models",
-  },
+  { label: "Collection", href: "/designs" },
+  { label: "About", href: "/#about" },
 ];
 
 export type ColorKey = "black" | "white" | "red" | "blue" | "custom";
@@ -88,47 +19,8 @@ export const COLORS: { key: ColorKey; name: string; hex: string }[] = [
   { key: "custom", name: "Custom", hex: "#ff5a1f" },
 ];
 
-export type QualityKey = "standard" | "fine" | "ultra";
-
-export type QualityDef = {
-  key: QualityKey;
-  name: string;
-  layerHeight: string;
-  timeMultiplier: number;
-  costMultiplier: number;
-};
-
-export const QUALITIES: QualityDef[] = [
-  { key: "standard", name: "Standard", layerHeight: "0.24mm", timeMultiplier: 1, costMultiplier: 1 },
-  { key: "fine", name: "Fine", layerHeight: "0.16mm", timeMultiplier: 1.35, costMultiplier: 1.2 },
-  { key: "ultra", name: "Ultra Fine", layerHeight: "0.10mm", timeMultiplier: 1.9, costMultiplier: 1.5 },
-];
-
-export const MAX_UPLOAD_MB = 50;
-export const SUPPORTED_FORMATS = [".stl", ".obj", ".3mf"];
-
-export type ProductCategory =
-  | "anime"
-  | "superhero"
-  | "gaming"
-  | "desk"
-  | "home"
-  | "cosplay"
-  | "collectibles"
-  | "functional";
-
-export const CATEGORIES: { key: ProductCategory; label: string; imageId: string }[] = [
-  { key: "anime", label: "Anime", imageId: "cyber-samurai" },
-  { key: "gaming", label: "Gaming", imageId: "retro-pixel-blaster" },
-  { key: "collectibles", label: "Collectibles", imageId: "nebula-fox" },
-  { key: "desk", label: "Desk", imageId: "modular-desk-organizer" },
-  { key: "home", label: "Home", imageId: "lofi-cat-planter" },
-  { key: "cosplay", label: "Cosplay", imageId: "circuit-visor" },
-  { key: "functional", label: "Functional", imageId: "wireless-charge-dock" },
-];
-
 /**
- * Real photos of prints we've actually produced, stored at
+ * Real photos of the pieces we sell, stored at
  * public/media/products/<imageId>.jpg. `imageId` doubles as the filename —
  * everything downstream (product cards, product pages, next/image sizing)
  * reads through this one function, so swapping a photo means replacing the
@@ -138,158 +30,218 @@ export function productImage(imageId: string) {
   return `/media/products/${imageId}.jpg`;
 }
 
+export type Availability = "available" | "limited" | "sold-out";
+
 export type Product = {
+  /** URL slug and canonical product id. */
   slug: string;
   name: string;
-  category: ProductCategory;
-  material: MaterialKey;
-  /** Bounding box of the design at its native (Medium) scale, before size scaling. */
-  baseDimensionsMm: { width: number; depth: number; height: number };
-  /**
-   * Approximate solid fraction of the bounding box (0-1) — a hollow
-   * decorative shell and a solid mechanical block of identical bounding-box
-   * size do not use the same amount of filament, so pricing derives
-   * estimated volume from this rather than the raw box volume. Stand-in for
-   * a real slicer estimate (see lib/productSize.ts).
-   */
-  fillFactor: number;
-  rating: number;
-  reviewCount: number;
-  colors: ColorKey[];
+  /** A single descriptive noun, not a filterable taxonomy — there is no category browsing. */
+  category: string;
+  price: number;
+  /** Print material, shown as a spec — not a selectable, price-affecting variant. */
+  material: string;
+  finish: string;
+  dimensionsMm: { width: number; depth: number; height: number };
+  /** One or two sentences — what the piece is. */
   description: string;
-  creator: string;
+  /** A short editorial line for the product page — why it exists / how it's made. */
+  story: string;
   imageId: string;
+  availability: Availability;
+  creator: string;
 };
 
+/**
+ * The complete catalog — exactly eight pieces, each photographed and priced
+ * individually. This is a curated collection, not a marketplace: there is no
+ * size/material/color configurator, no dynamic pricing engine and no
+ * user-submitted models. Add a ninth piece by adding a ninth entry here and
+ * its photo at public/media/products/<slug>.jpg — nothing else to touch.
+ */
 export const PRODUCTS: Product[] = [
   {
-    slug: "cyber-samurai",
+    slug: "kunai",
     name: "Kunai",
-    category: "anime",
-    material: "pla",
-    baseDimensionsMm: { width: 220, depth: 35, height: 10 },
-    fillFactor: 0.4,
-    rating: 4.8,
-    reviewCount: 214,
-    colors: ["black", "white", "red"],
+    category: "Prop",
+    price: 1450,
+    material: "PLA",
+    finish: "Matte black",
+    dimensionsMm: { width: 220, depth: 35, height: 10 },
     description:
-      "A classic ninja throwing-knife prop, cast with a crisp edge profile and balanced grip taper. Convention-ready straight off the bed.",
-    creator: "Studio Ronin",
+      "A ninja throwing-knife prop, cast with a crisp edge profile and a balanced grip taper.",
+    story:
+      "Modeled from a traditional kunai silhouette and printed flat for a true edge line — the kind of prop that reads as forged, not printed.",
     imageId: "cyber-samurai",
+    availability: "available",
+    creator: "Studio Ronin",
   },
   {
-    slug: "nebula-fox",
+    slug: "tentacle",
     name: "Tentacle",
-    category: "collectibles",
-    material: "resin",
-    baseDimensionsMm: { width: 70, depth: 70, height: 150 },
-    fillFactor: 0.22,
-    rating: 4.9,
-    reviewCount: 388,
-    colors: ["white", "blue"],
+    category: "Sculpture",
+    price: 2800,
+    material: "Resin",
+    finish: "Smooth, pearl white",
+    dimensionsMm: { width: 70, depth: 70, height: 150 },
     description:
-      "A sculptural tentacle piece with fine suction-cup detail, printed in resin for a smooth, painter-ready surface.",
-    creator: "Lumen Forge",
+      "A sculptural tentacle study with fine suction-cup detail, cast in resin for a painter-ready surface.",
+    story:
+      "The most labor-intensive piece in the collection — resin-printed at a slow layer height to keep every suction cup crisp. Produced in small batches.",
     imageId: "nebula-fox",
+    availability: "limited",
+    creator: "Lumen Forge",
   },
   {
-    slug: "retro-pixel-blaster",
-    name: "Shuriken (4-Point)",
-    category: "gaming",
-    material: "petg",
-    baseDimensionsMm: { width: 90, depth: 90, height: 6 },
-    fillFactor: 0.55,
-    rating: 4.6,
-    reviewCount: 97,
-    colors: ["black", "red", "blue"],
-    description:
-      "A four-point throwing star with sharpened-look edges, cast flat and true for display or prop use.",
-    creator: "Pixel Foundry",
+    slug: "shuriken-four-point",
+    name: "Shuriken — Four Point",
+    category: "Prop",
+    price: 950,
+    material: "PETG",
+    finish: "Matte black",
+    dimensionsMm: { width: 90, depth: 90, height: 6 },
+    description: "A four-point throwing star with sharpened-look edges, cast flat and true.",
+    story: "PETG for a slightly flexible edge that survives being handled, dropped and re-shelved.",
     imageId: "retro-pixel-blaster",
-  },
-  {
-    slug: "modular-desk-organizer",
-    name: "Pen Holder Figure",
-    category: "desk",
-    material: "petg",
-    baseDimensionsMm: { width: 85, depth: 85, height: 140 },
-    fillFactor: 0.18,
-    rating: 4.9,
-    reviewCount: 512,
-    colors: ["black", "white"],
-    description:
-      "A sculpted desk figure that doubles as a pen holder — one part display piece, one part daily tool.",
-    creator: "FORMA Studio",
-    imageId: "modular-desk-organizer",
-  },
-  {
-    slug: "lofi-cat-planter",
-    name: "Corset Vase",
-    category: "home",
-    material: "pla",
-    baseDimensionsMm: { width: 95, depth: 95, height: 180 },
-    fillFactor: 0.12,
-    rating: 4.8,
-    reviewCount: 301,
-    colors: ["white", "black"],
-    description:
-      "A vase with a laced, corset-inspired silhouette. Watertight print, fits standard cut stems.",
-    creator: "Studio Quiet",
-    imageId: "lofi-cat-planter",
-  },
-  {
-    slug: "circuit-visor",
-    name: "Shuriken (8-Point)",
-    category: "cosplay",
-    material: "abs",
-    baseDimensionsMm: { width: 100, depth: 100, height: 6 },
-    fillFactor: 0.5,
-    rating: 4.5,
-    reviewCount: 64,
-    colors: ["black"],
-    description:
-      "An eight-point throwing star with an intricate layered profile, built for convention props and shelf display alike.",
+    availability: "available",
     creator: "Pixel Foundry",
-    imageId: "circuit-visor",
   },
   {
-    slug: "gravity-dice-tower",
-    name: "Shuriken (3-Point)",
-    category: "cosplay",
-    material: "pla",
-    baseDimensionsMm: { width: 85, depth: 85, height: 6 },
-    fillFactor: 0.55,
-    rating: 4.7,
-    reviewCount: 178,
-    colors: ["black", "white", "blue"],
-    description:
-      "A minimal three-point throwing star, quick to print and finished with a clean beveled edge.",
-    creator: "Vantage Collective",
-    imageId: "gravity-dice-tower",
-  },
-  {
-    slug: "wireless-charge-dock",
-    name: "Celtic Coaster",
-    category: "functional",
-    material: "petg",
-    baseDimensionsMm: { width: 100, depth: 100, height: 8 },
-    fillFactor: 0.6,
-    rating: 4.6,
-    reviewCount: 132,
-    colors: ["black", "white"],
-    description:
-      "A knotwork coaster with a raised Celtic border, cast flat for a stable, coffee-ring-proof surface.",
+    slug: "pen-holder-figure",
+    name: "Pen Holder Figure",
+    category: "Object",
+    price: 1950,
+    material: "PETG",
+    finish: "Matte black",
+    dimensionsMm: { width: 85, depth: 85, height: 140 },
+    description: "A sculpted desk figure that doubles as a pen holder.",
+    story: "One part display piece, one part daily tool — designed to earn its place on a desk.",
+    imageId: "modular-desk-organizer",
+    availability: "available",
     creator: "FORMA Studio",
+  },
+  {
+    slug: "corset-vase",
+    name: "Corset Vase",
+    category: "Vessel",
+    price: 2200,
+    material: "PLA",
+    finish: "Matte white",
+    dimensionsMm: { width: 95, depth: 95, height: 180 },
+    description: "A vase with a laced, corset-inspired silhouette. Watertight, fits standard cut stems.",
+    story: "Printed as a single continuous shell — no seams, no glue joints, no visible layer lines on the laced panels.",
+    imageId: "lofi-cat-planter",
+    availability: "available",
+    creator: "Studio Quiet",
+  },
+  {
+    slug: "shuriken-eight-point",
+    name: "Shuriken — Eight Point",
+    category: "Prop",
+    price: 1100,
+    material: "ABS",
+    finish: "Matte black",
+    dimensionsMm: { width: 100, depth: 100, height: 6 },
+    description: "An eight-point throwing star with an intricate layered profile.",
+    story: "The most detailed of the three shuriken forms — ABS holds the fine points without chipping.",
+    imageId: "circuit-visor",
+    availability: "available",
+    creator: "Pixel Foundry",
+  },
+  {
+    slug: "shuriken-three-point",
+    name: "Shuriken — Three Point",
+    category: "Prop",
+    price: 750,
+    material: "PLA",
+    finish: "Matte black",
+    dimensionsMm: { width: 85, depth: 85, height: 6 },
+    description: "A minimal three-point throwing star, finished with a clean beveled edge.",
+    story: "The simplest form in the shuriken set — a study in restraint next to its four- and eight-point siblings.",
+    imageId: "gravity-dice-tower",
+    availability: "available",
+    creator: "Vantage Collective",
+  },
+  {
+    slug: "celtic-coaster",
+    name: "Celtic Coaster",
+    category: "Object",
+    price: 650,
+    material: "PETG",
+    finish: "Matte black",
+    dimensionsMm: { width: 100, depth: 100, height: 8 },
+    description: "A knotwork coaster with a raised Celtic border, cast flat for a stable, coffee-ring-proof surface.",
+    story: "Sold individually — pair two or more to complete a set.",
     imageId: "wireless-charge-dock",
+    availability: "available",
+    creator: "FORMA Studio",
+  },
+  {
+    slug: "jewellery-stand",
+    name: "Jewellery Stand",
+    category: "Object",
+    price: 2400,
+    material: "PLA",
+    finish: "Matte black",
+    dimensionsMm: { width: 90, depth: 90, height: 200 },
+    description: "A clawed hand rising from a bed of tentacles, cast to hold rings and hang necklaces from its fingertips.",
+    story: "The tentacle base carries over from the same sculpting language as Tentacle — printed tall and slow to keep every claw and sucker crisp.",
+    imageId: "jewellery-stand",
+    availability: "available",
+    creator: "Lumen Forge",
+  },
+  {
+    slug: "makeup-organizer",
+    name: "Makeup Organizer",
+    category: "Object",
+    price: 2600,
+    material: "PETG",
+    finish: "Matte black",
+    dimensionsMm: { width: 180, depth: 120, height: 130 },
+    description: "A brush cup and tiered tray in one piece, wrapped in the same carved tentacle relief as the rest of the set.",
+    story: "The largest piece in the collection — PETG for a surface that holds up to daily wiping down.",
+    imageId: "makeup-organizer",
+    availability: "available",
+    creator: "Lumen Forge",
+  },
+  {
+    slug: "crystal-phone-stand",
+    name: "Crystal Phone Stand",
+    category: "Object",
+    price: 1350,
+    material: "PLA",
+    finish: "Matte charcoal",
+    dimensionsMm: { width: 110, depth: 80, height: 100 },
+    description: "A faceted crystal cluster that doubles as a phone dock, angled for an easy read at a glance.",
+    story: "Each facet is printed at a distinct angle — no two crystal spikes catch the light quite the same way.",
+    imageId: "crystal-phone-stand",
+    availability: "available",
+    creator: "Vantage Collective",
+  },
+  {
+    slug: "ashtray",
+    name: "Ashtray",
+    category: "Vessel",
+    price: 850,
+    material: "PETG",
+    finish: "Matte black",
+    dimensionsMm: { width: 150, depth: 150, height: 40 },
+    description: "A knotwork medallion at the base, ringed by the same coiled tentacles as the rest of the collection.",
+    story: "PETG for better heat resistance than the rest of the catalog — the one piece here that's meant to take real warmth.",
+    imageId: "ashtray",
+    availability: "available",
+    creator: "FORMA Studio",
   },
 ];
 
+export function getProduct(slug: string) {
+  return PRODUCTS.find((p) => p.slug === slug);
+}
+
 export const FOOTER_LINKS = {
-  Shop: [
-    { label: "Designs", href: "/designs" },
-    { label: "Upload & Print", href: "/upload" },
-    { label: "Materials", href: "/materials" },
-    { label: "Track Order", href: "/track" },
+  Collection: [
+    { label: "All pieces", href: "/designs" },
+    { label: "Track order", href: "/track" },
   ],
   Help: [
     { label: "FAQ", href: "/support#faq" },

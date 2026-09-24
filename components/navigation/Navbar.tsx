@@ -15,9 +15,10 @@ import AvatarMenu from "./AvatarMenu";
 import { cn } from "@/lib/utils";
 
 function isNavLinkActive(pathname: string, href: string) {
-  const hrefPath = href.split("#")[0] || "/";
-  if (hrefPath === "/") return pathname === "/";
-  return pathname === hrefPath || pathname.startsWith(`${hrefPath}/`);
+  // An in-page anchor (e.g. "/#about") never represents its own route, so it
+  // should never show as the active nav item.
+  if (href.includes("#")) return false;
+  return pathname === href || pathname.startsWith(`${href}/`);
 }
 
 export default function Navbar() {
@@ -55,20 +56,30 @@ export default function Navbar() {
     router.push(q ? `/designs?q=${encodeURIComponent(q)}` : "/designs");
   };
 
-  // Bright white in both states (transparent-at-top and solid-black-scrolled) —
-  // scoped per-element rather than on the whole header, so it never reaches
+  // Bright white whenever the navbar sits over something dark: once scrolled
+  // (solid black bg, any page) or at rest on the homepage (transparent, over
+  // the hero video). On every other page, "at rest" means the navbar is
+  // transparent over the plain page background — there's no dark backdrop to
+  // fight there, so the normal --color-text tokens (dark in light mode,
+  // light in dark mode) apply instead, or the white would be unreadable
+  // against a light page.
+  //
+  // Scoped per-element rather than on the whole header, so it never reaches
   // components with their own opaque fill — the avatar pill, the open search
-  // input, the Upload Design button — which already contrast correctly
-  // against their own background and would break if forced white too.
-  // A soft drop-shadow (works on both text and the icon SVGs, unlike
-  // text-shadow) so the white keeps reading clearly over the busy hero video
-  // in the transparent state — a no-op once the navbar is solid black.
-  const navFgStyle = {
-    "--color-text": "#ffffff",
-    "--color-text-dim": "rgba(255,255,255,0.85)",
-    "--color-text-faint": "rgba(255,255,255,0.7)",
-    filter: "drop-shadow(0 1px 3px rgba(0,0,0,0.55))",
-  } as React.CSSProperties;
+  // input, the Upload button — which already contrast correctly against
+  // their own background and would break if forced white too.
+  const forceWhite = scrolled || pathname === "/";
+  const navFgStyle = forceWhite
+    ? ({
+        "--color-text": "#ffffff",
+        "--color-text-dim": "rgba(255,255,255,0.85)",
+        "--color-text-faint": "rgba(255,255,255,0.7)",
+        // A drop-shadow (unlike text-shadow, also affects the icon SVGs) so
+        // the white keeps reading clearly over the busy hero video — a
+        // no-op once the navbar is solid black.
+        filter: "drop-shadow(0 1px 3px rgba(0,0,0,0.55))",
+      } as React.CSSProperties)
+    : undefined;
 
   return (
     <>
@@ -171,9 +182,6 @@ export default function Navbar() {
                 Sign in
               </Link>
             )}
-            <Button as="link" href="/upload" size="sm" className="ml-1">
-              Upload Design
-            </Button>
           </div>
 
           <div className="flex items-center gap-0.5 lg:hidden">
@@ -268,8 +276,8 @@ export default function Navbar() {
                 <ThemeToggle />
               </div>
               <div className="mt-4">
-                <Button as="link" href="/upload" className="w-full">
-                  Upload Design
+                <Button as="link" href="/designs" className="w-full">
+                  View the collection
                 </Button>
               </div>
             </div>

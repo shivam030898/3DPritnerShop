@@ -71,36 +71,6 @@ export async function placeCartOrder(details: CheckoutDetails): Promise<PlaceOrd
 
     await db.$transaction(async (tx) => {
       for (const row of cartRows) {
-        const isCustom = row.type === "custom";
-        const isPrintables = isCustom && row.modelSourceType === "PRINTABLES";
-
-        // A Printables-sourced item has no real file to describe — there's
-        // nothing to save as a Design draft, unlike a genuine upload.
-        let designId: string | undefined;
-        if (isCustom && !isPrintables) {
-          const stats = row.statsJson
-            ? (JSON.parse(row.statsJson) as { volumeCm3: number; dimensionsCm: { x: number; y: number; z: number } })
-            : { volumeCm3: 0, dimensionsCm: { x: 0, y: 0, z: 0 } };
-
-          const design = await tx.design.create({
-            data: {
-              userId,
-              name: row.fileName ?? row.name,
-              fileUrl: row.fileUrl!,
-              fileType: row.fileType!,
-              previewUrl: row.fileUrl,
-              volumeCm3: stats.volumeCm3,
-              dimensionsCm: JSON.stringify(stats.dimensionsCm),
-              material: row.material,
-              color: row.color,
-              quality: row.quality,
-              lastPrice: row.unitPrice,
-              lastOrderedAt: createdAt,
-            },
-          });
-          designId = design.id;
-        }
-
         const subtotal = row.unitPrice * row.quantity;
         const orderTotal = subtotal + SHIPPING_FLAT;
 
@@ -108,20 +78,9 @@ export async function placeCartOrder(details: CheckoutDetails): Promise<PlaceOrd
           data: {
             orderNumber: generateOrderId(),
             userId,
-            designId,
-            productSlug: !isCustom ? row.slug ?? undefined : undefined,
-            itemName: isPrintables ? "Printables model" : isCustom ? row.fileName ?? row.name : row.name,
-            itemType: row.type,
-            modelSourceType: isCustom ? row.modelSourceType ?? "UPLOAD" : undefined,
-            printablesUrl: isPrintables ? row.printablesUrl : undefined,
-            notes: row.notes,
-            material: row.material,
-            color: row.color,
-            quality: isCustom ? row.quality : undefined,
-            sizeLabel: row.sizeLabel,
-            widthMm: row.widthMm,
-            depthMm: row.depthMm,
-            heightMm: row.heightMm,
+            productSlug: row.slug ?? undefined,
+            itemName: row.name,
+            itemType: "product",
             quantity: row.quantity,
             unitPrice: row.unitPrice,
             subtotal,

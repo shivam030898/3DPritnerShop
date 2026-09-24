@@ -9,6 +9,7 @@ import Navbar from "@/components/navigation/Navbar";
 import MobileTabBar from "@/components/navigation/MobileTabBar";
 import Footer from "@/components/footer/Footer";
 import Toaster from "@/components/ui/Toaster";
+import { PRODUCTS } from "@/lib/constants";
 
 const spaceGrotesk = Space_Grotesk({
   variable: "--font-space-grotesk",
@@ -27,33 +28,30 @@ const SITE_URL = "https://forma.example.com";
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "FORMA — Your design. Made real.",
+    default: "FORMA — A curated collection of collectible objects.",
     template: "%s | FORMA",
   },
   description:
-    "Upload a 3D model and FORMA prints, finishes and delivers it to your door. Or browse ready-made designs from independent creators.",
+    `${PRODUCTS.length} collectible 3D-printed pieces, each professionally designed, printed and finished. A curated collection, not a catalog.`,
   keywords: [
-    "3D printing service",
-    "upload 3D model to print",
-    "on-demand 3D printing",
-    "custom 3D print",
-    "3D printed figurines",
-    "3D printing marketplace",
+    "collectible 3D prints",
+    "curated 3D printed objects",
+    "designer 3D printed collectibles",
+    "art print collection",
   ],
   authors: [{ name: "FORMA" }],
   openGraph: {
     type: "website",
     url: SITE_URL,
-    title: "FORMA — Your design. Made real.",
-    description:
-      "Upload a 3D model and FORMA prints, finishes and delivers it to your door.",
+    title: "FORMA — A curated collection of collectible objects.",
+    description: `${PRODUCTS.length} collectible 3D-printed pieces, each professionally designed, printed and finished.`,
     siteName: "FORMA",
     images: [{ url: "/images/og-cover.jpg", width: 1200, height: 630 }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "FORMA — Your design. Made real.",
-    description: "Upload a 3D model and we'll print, finish and deliver it.",
+    title: "FORMA — A curated collection of collectible objects.",
+    description: `${PRODUCTS.length} collectible 3D-printed pieces, each professionally designed, printed and finished.`,
     images: ["/images/og-cover.jpg"],
   },
   robots: { index: true, follow: true },
@@ -70,10 +68,9 @@ const jsonLd = {
       logo: `${SITE_URL}/images/logo-v3.png`,
     },
     {
-      "@type": "Service",
-      name: "FORMA on-demand 3D printing",
-      description:
-        "Upload a 3D model for custom printing, or order ready-made designs from a curated marketplace.",
+      "@type": "Store",
+      name: "FORMA collection",
+      description: `A curated collection of ${PRODUCTS.length} collectible 3D-printed objects.`,
       provider: { "@type": "Organization", name: "FORMA" },
       areaServed: "IN",
     },

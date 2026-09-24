@@ -63,10 +63,10 @@ export default async function AccountPage() {
       </div>
 
       <div className="mt-10 rounded-xl border border-dashed border-border-strong p-6 text-center">
-        <p className="text-sm text-text-dim">Have another model to print?</p>
+        <p className="text-sm text-text-dim">Looking for something new?</p>
         <div className="mt-3 flex justify-center">
-          <Button as="link" href="/upload" size="sm">
-            Upload a design
+          <Button as="link" href="/designs" size="sm">
+            View the collection
           </Button>
         </div>
       </div>

@@ -5,19 +5,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion, useMotionValue, useSpring, useTransform, type MotionValue } from "framer-motion";
 import { ArrowRight, ShieldCheck } from "lucide-react";
-import { PRODUCTS, MATERIALS, productImage } from "@/lib/constants";
-import { getProductSizeOptions } from "@/lib/productSize";
-import { PRICING_CONFIG } from "@/lib/pricing";
+import { PRODUCTS, productImage } from "@/lib/constants";
 import { formatINR, cn } from "@/lib/utils";
 import Button from "@/components/ui/Button";
-import ModelSourcePicker from "@/components/upload/ModelSourcePicker";
 
 const EASE = [0.16, 1, 0.3, 1] as const;
-
-function priceFor(slug: string) {
-  const product = PRODUCTS.find((p) => p.slug === slug)!;
-  return getProductSizeOptions(product).find((o) => o.key === "medium")!.price.unitCost;
-}
+const FROM_PRICE = Math.min(...PRODUCTS.map((p) => p.price));
 
 type Layer = "back" | "middle" | "front";
 
@@ -35,7 +28,7 @@ type ModelSpec = {
 // parallax reach, opacity and drop-shadow strength — see LAYER_STYLE below.
 const MODELS: ModelSpec[] = [
   {
-    slug: "cyber-samurai",
+    slug: "kunai",
     layer: "front",
     position: "left-[2%] top-[16%] sm:left-[5%]",
     size: "w-32 sm:w-40 lg:w-52",
@@ -44,7 +37,7 @@ const MODELS: ModelSpec[] = [
     floatDelay: 0,
   },
   {
-    slug: "gravity-dice-tower",
+    slug: "shuriken-three-point",
     layer: "front",
     position: "right-[2%] bottom-[6%] sm:right-[5%]",
     size: "w-32 sm:w-40 lg:w-52",
@@ -53,7 +46,7 @@ const MODELS: ModelSpec[] = [
     floatDelay: 0.6,
   },
   {
-    slug: "nebula-fox",
+    slug: "tentacle",
     layer: "middle",
     position: "right-[6%] top-[14%] sm:right-[10%]",
     size: "w-24 sm:w-28 lg:w-36",
@@ -62,7 +55,7 @@ const MODELS: ModelSpec[] = [
     floatDelay: 0.3,
   },
   {
-    slug: "modular-desk-organizer",
+    slug: "pen-holder-figure",
     layer: "middle",
     position: "left-[6%] bottom-[3%] sm:left-[11%]",
     size: "w-24 sm:w-28 lg:w-36",
@@ -71,7 +64,7 @@ const MODELS: ModelSpec[] = [
     floatDelay: 0.9,
   },
   {
-    slug: "retro-pixel-blaster",
+    slug: "shuriken-four-point",
     layer: "middle",
     position: "left-[0%] top-1/2 -translate-y-1/2 sm:left-[1%]",
     size: "w-20 sm:w-24 lg:w-32",
@@ -80,7 +73,7 @@ const MODELS: ModelSpec[] = [
     floatDelay: 1.2,
   },
   {
-    slug: "wireless-charge-dock",
+    slug: "celtic-coaster",
     layer: "back",
     position: "right-[0%] top-1/2 -translate-y-1/2 sm:right-[2%]",
     size: "w-16 lg:w-24",
@@ -89,7 +82,7 @@ const MODELS: ModelSpec[] = [
     floatDelay: 0.4,
   },
   {
-    slug: "lofi-cat-planter",
+    slug: "corset-vase",
     layer: "back",
     position: "left-[22%] top-[16%]",
     size: "w-14 lg:w-20",
@@ -206,7 +199,7 @@ export default function Hero() {
             transition={{ duration: 0.5, delay: 0.7, ease: EASE }}
             className="text-mono-label text-xs text-[#E8D8B8] [text-shadow:0_1px_10px_rgba(0,0,0,0.45)]"
           >
-            Make it real
+            The Collection
           </motion.p>
 
           <motion.h1
@@ -215,9 +208,9 @@ export default function Hero() {
             transition={{ duration: 0.55, delay: 0.78, ease: EASE }}
             className="text-display mt-3 text-[clamp(2rem,4vw,2.75rem)] leading-[1.05] text-white [text-shadow:0_2px_18px_rgba(0,0,0,0.5)]"
           >
-            Turn digital
+            Objects worth
             <br />
-            into physical.
+            collecting.
           </motion.h1>
 
           <motion.p
@@ -226,41 +219,30 @@ export default function Hero() {
             transition={{ duration: 0.5, delay: 0.86, ease: EASE }}
             className="mt-3 max-w-[32ch] text-sm text-white/80 [text-shadow:0_2px_14px_rgba(0,0,0,0.45)]"
           >
-            Upload a 3D design and we&apos;ll print, finish and deliver it to your door.
+            {PRODUCTS.length} pieces, professionally designed, printed and finished — a small collection, not a catalog.
           </motion.p>
 
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.95, ease: EASE }}
-            className="mt-6 w-full max-w-[380px]"
+            className="mt-7"
           >
-            <ModelSourcePicker compact />
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5, delay: 1.05, ease: EASE }}
-            className="mt-4"
-          >
-            <Button as="link" href="/designs" variant="secondary" size="sm">
-              Shop designs
-              <ArrowRight size={13} />
+            <Button as="link" href="/designs" size="lg">
+              View the collection
+              <ArrowRight size={14} />
             </Button>
           </motion.div>
 
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.5, delay: 1.15, ease: EASE }}
+            transition={{ duration: 0.5, delay: 1.1, ease: EASE }}
             className="mt-5 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px] text-white/70"
           >
-            <span>From {formatINR(PRICING_CONFIG.minimumOrderValue)}</span>
+            <span>From {formatINR(FROM_PRICE)}</span>
             <span>·</span>
             <span>2–4 day delivery</span>
-            <span>·</span>
-            <span>{MATERIALS.length} materials</span>
             <span>·</span>
             <span className="flex items-center gap-1">
               <ShieldCheck size={11} />
@@ -333,7 +315,7 @@ function HeroModel({
             </motion.div>
             <div className="pointer-events-none absolute inset-x-0 -bottom-6 flex flex-col items-center opacity-0 transition-opacity duration-200 group-hover:opacity-100">
               <p className="max-w-full truncate rounded-full bg-text px-2.5 py-1 text-[10px] font-medium text-bg shadow-card">
-                {product.name} · {formatINR(priceFor(product.slug))}
+                {product.name} · {formatINR(product.price)}
               </p>
             </div>
           </Link>

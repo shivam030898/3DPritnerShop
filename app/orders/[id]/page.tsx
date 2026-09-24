@@ -4,8 +4,7 @@ import { Truck, Box } from "lucide-react";
 import { getOrderByNumber } from "@/lib/actions/orders";
 import { getOrderStageIndex, getEstimatedDelivery, ORDER_STATUS_SEQUENCE, ORDER_STATUS_LABELS, ORDER_STATUS_DESCRIPTIONS } from "@/lib/orders";
 import { formatDate, formatINR } from "@/lib/utils";
-import { PRODUCTS, productImage, COLORS, MATERIALS } from "@/lib/constants";
-import { formatDimensionsMm } from "@/lib/productSize";
+import { PRODUCTS, productImage } from "@/lib/constants";
 import OrderTimeline from "@/components/orders/OrderTimeline";
 import Badge from "@/components/ui/Badge";
 
@@ -41,12 +40,6 @@ export default async function OrderTrackingPage({
     pin: string;
   };
   const product = order.productSlug ? PRODUCTS.find((p) => p.slug === order.productSlug) : null;
-  const colorName = COLORS.find((c) => c.key === order.color)?.name;
-  const materialName = MATERIALS.find((m) => m.key === order.material)?.name;
-  const dimensions =
-    order.widthMm && order.depthMm && order.heightMm
-      ? formatDimensionsMm({ width: order.widthMm, depth: order.depthMm, height: order.heightMm })
-      : null;
 
   return (
     <div className="mx-auto max-w-4xl px-5 py-10 md:py-14">
@@ -96,31 +89,6 @@ export default async function OrderTrackingPage({
             </div>
           </div>
           <span className="text-sm font-medium text-text-faint">Tracking number</span>
-        </div>
-      )}
-
-      {(dimensions || materialName || colorName) && (
-        <div className="mt-8 grid grid-cols-1 gap-3 rounded-xl border border-border bg-surface p-5 text-sm sm:grid-cols-3">
-          {dimensions && (
-            <div>
-              <p className="text-xs text-text-faint">
-                {order.sizeLabel ? `Size — ${order.sizeLabel}` : "Size"}
-              </p>
-              <p className="mt-1 text-text">{dimensions}</p>
-            </div>
-          )}
-          {materialName && (
-            <div>
-              <p className="text-xs text-text-faint">Material</p>
-              <p className="mt-1 text-text">{materialName}</p>
-            </div>
-          )}
-          {colorName && (
-            <div>
-              <p className="text-xs text-text-faint">Color</p>
-              <p className="mt-1 text-text">{colorName}</p>
-            </div>
-          )}
         </div>
       )}
 

@@ -16,7 +16,6 @@ import CartOrderSummary from "@/components/checkout/CartOrderSummary";
 import OrderConfirmed from "@/components/checkout/OrderConfirmed";
 import SavedAddressPicker from "@/components/checkout/SavedAddressPicker";
 import EmailVerifyPanel from "@/components/account/EmailVerifyPanel";
-import StepIndicator from "@/components/configure/StepIndicator";
 import { cn } from "@/lib/utils";
 
 const PAYMENT_METHODS = ["UPI", "Card", "Net Banking", "Wallet"];
@@ -165,9 +164,9 @@ export default function CheckoutPage() {
     return (
       <div className="mx-auto max-w-md px-5 py-20 text-center">
         <h1 className="text-display text-2xl text-text">Nothing to check out</h1>
-        <p className="mt-2 text-text-dim">Your cart is empty — browse designs or upload a model.</p>
+        <p className="mt-2 text-text-dim">Your cart is empty — browse the collection to find a piece.</p>
         <Button as="link" href="/designs" className="mt-6">
-          Browse designs
+          View the collection
         </Button>
       </div>
     );
@@ -198,8 +197,7 @@ export default function CheckoutPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-5 py-10 md:py-14">
-      <StepIndicator current={4} />
-      <h1 className="mt-8 text-display text-2xl text-text md:text-3xl">Checkout</h1>
+      <h1 className="text-display text-2xl text-text md:text-3xl">Checkout</h1>
 
       <div className="mt-8 grid grid-cols-1 gap-10 lg:grid-cols-[1fr_380px]">
         <form onSubmit={handleSubmit} className="flex flex-col gap-10">

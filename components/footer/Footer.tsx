@@ -10,7 +10,7 @@ export default function Footer() {
           <div className="col-span-2 sm:col-span-1">
             <FormaLogo iconClassName="h-6 w-6" />
             <p className="mt-2 max-w-[22ch] text-sm text-text-dim">
-              Upload a design. We print, finish and deliver it.
+              A curated collection of collectible 3D-printed objects.
             </p>
           </div>
           {Object.entries(FOOTER_LINKS).map(([group, links]) => (

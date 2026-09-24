@@ -1,17 +1,16 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { notFound, useRouter } from "next/navigation";
-import { Check, Star, Truck } from "lucide-react";
-import { PRODUCTS, COLORS, productImage, type ColorKey } from "@/lib/constants";
+import { Truck } from "lucide-react";
+import { PRODUCTS, productImage } from "@/lib/constants";
 import { useCart } from "@/lib/useCart";
-import { getProductSizeOptions, formatDimensionsMm, type SizeKey } from "@/lib/productSize";
-import { formatINR, cn } from "@/lib/utils";
+import { formatINR } from "@/lib/utils";
 import QuantityStepper from "@/components/ui/QuantityStepper";
-import SizeSelector from "@/components/designs/SizeSelector";
 import Button from "@/components/ui/Button";
+import { gsap } from "@/lib/gsap";
 
 export default function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params);
@@ -20,144 +19,115 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
 
   const router = useRouter();
   const { addItem } = useCart();
-  const [color, setColor] = useState<ColorKey>(product.colors[0]);
-  const [sizeKey, setSizeKey] = useState<SizeKey>("medium");
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
 
-  const sizeOptions = getProductSizeOptions(product);
-  const selectedSize = sizeOptions.find((o) => o.key === sizeKey) ?? sizeOptions[1];
+  const soldOut = product.availability === "sold-out";
+
+  useLayoutEffect(() => {
+    const ctx = gsap.context(() => {
+      const tl = gsap.timeline({ defaults: { ease: "power2.out" } });
+      tl.from(".pd-image", { opacity: 0, scale: 1.03, duration: 0.8 })
+        .from(".pd-eyebrow", { opacity: 0, y: 10, duration: 0.5 }, "-=0.5")
+        .from(".pd-title", { opacity: 0, y: 14, duration: 0.6 }, "-=0.35")
+        .from(".pd-detail", { opacity: 0, y: 10, duration: 0.5, stagger: 0.06 }, "-=0.3");
+    }, rootRef);
+    return () => ctx.revert();
+  }, [product.slug]);
 
   const buildItem = () => ({
-    type: "product" as const,
     slug: product.slug,
     name: product.name,
     imageId: product.imageId,
-    color,
-    sizeLabel: selectedSize.label,
-    widthMm: selectedSize.dimensionsMm.width,
-    depthMm: selectedSize.dimensionsMm.depth,
-    heightMm: selectedSize.dimensionsMm.height,
     quantity,
-    unitPrice: selectedSize.price.unitCost,
+    unitPrice: product.price,
   });
 
   const handleAddToCart = () => {
-    if (!selectedSize.fitsPrinter) return;
+    if (soldOut) return;
     addItem(buildItem());
     setAdded(true);
   };
 
   const handleBuyNow = () => {
-    if (!selectedSize.fitsPrinter) return;
+    if (soldOut) return;
     addItem(buildItem());
     router.push("/cart");
   };
 
   return (
-    <div className="mx-auto max-w-5xl px-5 py-10 md:py-14">
-      <div className="grid grid-cols-1 gap-10 lg:grid-cols-2 lg:gap-16">
-        <div className="relative aspect-square overflow-hidden rounded-xl bg-surface-2">
+    <div ref={rootRef} className="mx-auto max-w-6xl px-5 py-10 md:py-14">
+      <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1fr_420px] lg:gap-16">
+        <div className="pd-image relative aspect-square overflow-hidden bg-surface-2 sm:aspect-[4/5]">
           <Image
             src={productImage(product.imageId)}
             alt={product.name}
             fill
-            sizes="(max-width: 1024px) 100vw, 50vw"
+            sizes="(max-width: 1024px) 100vw, 55vw"
             className="object-cover"
             priority
           />
+          {product.availability === "limited" && (
+            <p className="text-mono-label absolute left-4 top-4 text-[11px] text-white [text-shadow:0_1px_6px_rgba(0,0,0,0.6)]">
+              Limited
+            </p>
+          )}
         </div>
 
-        <div>
-          <p className="text-xs text-text-faint">by {product.creator}</p>
-          <h1 className="text-display mt-1 text-2xl text-text md:text-3xl">{product.name}</h1>
-          <div className="mt-2 flex items-center gap-3 text-sm text-text-dim">
-            <span className="flex items-center gap-1">
-              <Star size={13} className="fill-current text-text" />
-              {product.rating} ({product.reviewCount})
-            </span>
-            <span>·</span>
-            <span>{product.material.toUpperCase()}</span>
-          </div>
-          <p className="text-display mt-4 text-2xl text-text">{formatINR(selectedSize.price.unitCost)}</p>
-          <p className="mt-1 text-sm text-text-faint">{formatDimensionsMm(selectedSize.dimensionsMm)}</p>
+        <div className="lg:pt-2">
+          <p className="pd-eyebrow text-xs text-text-faint">{product.category} · by {product.creator}</p>
+          <h1 className="pd-title text-display mt-2 text-3xl leading-[1.05] text-text md:text-4xl">
+            {product.name}
+          </h1>
+          <p className="pd-detail text-display mt-5 text-2xl text-text">{formatINR(product.price)}</p>
 
-          <p className="mt-5 text-sm leading-relaxed text-text-dim">{product.description}</p>
+          <p className="pd-detail mt-4 max-w-[46ch] text-sm leading-relaxed text-text-dim">
+            {product.description}
+          </p>
 
-          <div className="mt-6">
-            <SizeSelector options={sizeOptions} selectedKey={sizeKey} onSelect={(key) => setSizeKey(key as SizeKey)} />
-          </div>
-
-          <div className="mt-6">
-            <p className="text-sm font-medium text-text">Color</p>
-            <div className="mt-3 flex gap-3">
-              {product.colors.map((key) => {
-                const c = COLORS.find((col) => col.key === key)!;
-                const active = color === key;
-                return (
-                  <button
-                    key={key}
-                    onClick={() => setColor(key)}
-                    aria-label={c.name}
-                    className={cn(
-                      "flex h-10 w-10 items-center justify-center rounded-full border-2 transition-transform",
-                      active ? "border-text scale-105" : "border-transparent hover:scale-105"
-                    )}
-                  >
-                    <span
-                      className="flex h-8 w-8 items-center justify-center rounded-full border border-border"
-                      style={{ background: c.hex }}
-                    >
-                      {active && (
-                        <Check size={13} className={c.key === "white" ? "text-text" : "text-white"} />
-                      )}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="mt-6">
-            <p className="text-sm font-medium text-text">Quantity</p>
-            <div className="mt-3">
-              <QuantityStepper value={quantity} onChange={setQuantity} />
-            </div>
-          </div>
-
-          <div className="mt-8 flex gap-3">
+          <div className="pd-detail mt-8 flex items-center gap-4">
+            <QuantityStepper value={quantity} onChange={setQuantity} />
             <Button
-              variant="secondary"
               size="lg"
               className="flex-1 justify-center"
-              disabled={!selectedSize.fitsPrinter}
+              disabled={soldOut}
               onClick={handleAddToCart}
             >
-              {added ? "Added ✓" : "Add to cart"}
-            </Button>
-            <Button
-              size="lg"
-              className="flex-1 justify-center"
-              disabled={!selectedSize.fitsPrinter}
-              onClick={handleBuyNow}
-            >
-              Buy now
+              {soldOut ? "Sold out" : added ? "Added ✓" : "Add to cart"}
             </Button>
           </div>
+          {!soldOut && (
+            <button
+              type="button"
+              onClick={handleBuyNow}
+              className="pd-detail mt-3 block w-full cursor-pointer text-center text-sm text-text-dim underline underline-offset-4 transition-colors hover:text-text"
+            >
+              Buy now
+            </button>
+          )}
           {added && (
-            <Link href="/checkout" className="mt-3 block text-center text-sm font-medium text-text underline underline-offset-2">
+            <Link
+              href="/checkout"
+              className="pd-detail mt-3 block text-center text-sm font-medium text-text underline underline-offset-2"
+            >
               Go to checkout →
             </Link>
           )}
 
-          <div className="mt-8 grid grid-cols-1 gap-3 border-t border-border pt-6 text-sm sm:grid-cols-2">
-            <Spec label="Print time" value={`~${selectedSize.price.productionHours}h`} />
-            <Spec label="Est. weight" value={`~${selectedSize.price.weightG}g`} />
-            <Spec label="Dimensions" value={formatDimensionsMm(selectedSize.dimensionsMm)} />
-            <Spec label="Material" value={product.material.toUpperCase()} />
+          <div className="pd-detail mt-10 grid grid-cols-2 gap-y-3 border-t border-border pt-6 text-sm">
+            <Spec label="Material" value={product.material} />
+            <Spec label="Finish" value={product.finish} />
+            <Spec
+              label="Dimensions"
+              value={`${Math.round(product.dimensionsMm.width)} × ${Math.round(product.dimensionsMm.depth)} × ${Math.round(product.dimensionsMm.height)} mm`}
+            />
+            <Spec label="Availability" value={soldOut ? "Sold out" : product.availability === "limited" ? "Limited" : "In stock"} />
           </div>
 
-          <div className="mt-4 flex items-center gap-2 text-xs text-text-faint">
+          <p className="pd-detail mt-6 text-sm leading-relaxed text-text-faint">{product.story}</p>
+
+          <div className="pd-detail mt-6 flex items-center gap-2 text-xs text-text-faint">
             <Truck size={14} />
             Ships in 2–4 business days
           </div>
@@ -169,9 +139,9 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
 
 function Spec({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex justify-between">
-      <span className="text-text-dim">{label}</span>
-      <span className="text-text">{value}</span>
+    <div>
+      <p className="text-xs text-text-faint">{label}</p>
+      <p className="mt-0.5 text-text">{value}</p>
     </div>
   );
 }
