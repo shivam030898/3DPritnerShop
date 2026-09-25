@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { notFound, useRouter } from "next/navigation";
 import { Truck } from "lucide-react";
-import { PRODUCTS, productImage } from "@/lib/constants";
+import { PRODUCTS, getProductPrice, productImage } from "@/lib/constants";
 import { useCart } from "@/lib/useCart";
 import { formatINR } from "@/lib/utils";
 import QuantityStepper from "@/components/ui/QuantityStepper";
@@ -24,6 +24,7 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
   const rootRef = useRef<HTMLDivElement>(null);
 
   const soldOut = product.availability === "sold-out";
+  const price = getProductPrice(product);
 
   useLayoutEffect(() => {
     const ctx = gsap.context(() => {
@@ -41,7 +42,7 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
     name: product.name,
     imageId: product.imageId,
     quantity,
-    unitPrice: product.price,
+    unitPrice: price,
   });
 
   const handleAddToCart = () => {
@@ -80,7 +81,7 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
           <h1 className="pd-title text-display mt-2 text-3xl leading-[1.05] text-text md:text-4xl">
             {product.name}
           </h1>
-          <p className="pd-detail text-display mt-5 text-2xl text-text">{formatINR(product.price)}</p>
+          <p className="pd-detail text-display mt-5 text-2xl text-text">{formatINR(price)}</p>
 
           <p className="pd-detail mt-4 max-w-[46ch] text-sm leading-relaxed text-text-dim">
             {product.description}

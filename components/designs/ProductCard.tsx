@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Plus } from "lucide-react";
 import type { Product } from "@/lib/constants";
-import { productImage } from "@/lib/constants";
+import { getProductPrice, productImage } from "@/lib/constants";
 import { formatINR } from "@/lib/utils";
 import { useCart } from "@/lib/useCart";
 import { toast } from "@/lib/toastStore";
@@ -19,6 +19,7 @@ export default function ProductCard({
 }) {
   const { addItem } = useCart();
   const soldOut = product.availability === "sold-out";
+  const price = getProductPrice(product);
 
   const handleQuickAdd = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -28,7 +29,7 @@ export default function ProductCard({
       slug: product.slug,
       name: product.name,
       imageId: product.imageId,
-      unitPrice: product.price,
+      unitPrice: price,
       quantity: 1,
     });
     toast(`Added ${product.name} to cart`, "success");
@@ -78,7 +79,7 @@ export default function ProductCard({
           <p className="truncate text-sm text-text">{product.name}</p>
           <p className="mt-0.5 text-xs text-text-faint">{product.category}</p>
         </div>
-        <p className="shrink-0 text-sm text-text-dim">{formatINR(product.price)}</p>
+        <p className="shrink-0 text-sm text-text-dim">{formatINR(price)}</p>
       </div>
     </Link>
   );

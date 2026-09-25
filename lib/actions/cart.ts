@@ -4,7 +4,7 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import type { CartItem } from "@/lib/generated/prisma";
 import { buildConfigKey, mergeCartItems, type CartLineItem, type NewCartItem } from "@/lib/cart";
-import { getProduct } from "@/lib/constants";
+import { getProduct, getProductPrice } from "@/lib/constants";
 
 export type CartResult = { ok: true; items: CartLineItem[] } | { ok: false; error: string };
 
@@ -65,7 +65,12 @@ export async function addToCartAction(rawItem: NewCartItem): Promise<CartResult>
   // product, so re-price it from the catalog itself before writing.
   const product = getProduct(rawItem.slug);
   if (!product) return { ok: false, error: "That piece is no longer available." };
-  const item: NewCartItem = { ...rawItem, name: product.name, imageId: product.imageId, unitPrice: product.price };
+  const item: NewCartItem = {
+    ...rawItem,
+    name: product.name,
+    imageId: product.imageId,
+    unitPrice: getProductPrice(product),
+  };
 
   const configKey = buildConfigKey(item);
   const quantity = item.quantity ?? 1;
@@ -156,7 +161,9 @@ export async function mergeGuestCartAction(guestItems: CartLineItem[]): Promise<
     const repriced = guestItems
       .map((item) => {
         const product = getProduct(item.slug);
-        return product ? { ...item, name: product.name, imageId: product.imageId, unitPrice: product.price } : null;
+        return product
+          ? { ...item, name: product.name, imageId: product.imageId, unitPrice: getProductPrice(product) }
+          : null;
       })
       .filter((item): item is CartLineItem => item !== null);
     const merged = mergeCartItems(existingRows, repriced);

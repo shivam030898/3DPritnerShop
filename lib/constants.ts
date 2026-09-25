@@ -1,3 +1,5 @@
+import { calculateProductPrice, type MaterialType } from "./pricing";
+
 export const BRAND = {
   name: "FORMA",
   tagline: "A curated collection of collectible objects.",
@@ -38,8 +40,11 @@ export type Product = {
   name: string;
   /** A single descriptive noun, not a filterable taxonomy — there is no category browsing. */
   category: string;
-  price: number;
-  /** Print material, shown as a spec — not a selectable, price-affecting variant. */
+  /** Print weight — drives the material-cost term of the pricing formula. See lib/pricing.ts. */
+  weightInGrams: number;
+  /** Pricing tier the material rate is looked up by. See MATERIAL_RATES in lib/pricing.ts. */
+  materialType: MaterialType;
+  /** Print material, shown as a spec on the product page — display text only. */
   material: string;
   finish: string;
   dimensionsMm: { width: number; depth: number; height: number };
@@ -53,18 +58,22 @@ export type Product = {
 };
 
 /**
- * The complete catalog — exactly eight pieces, each photographed and priced
+ * The complete catalog — exactly seventeen pieces, each photographed
  * individually. This is a curated collection, not a marketplace: there is no
- * size/material/color configurator, no dynamic pricing engine and no
- * user-submitted models. Add a ninth piece by adding a ninth entry here and
- * its photo at public/media/products/<slug>.jpg — nothing else to touch.
+ * size/color configurator and no user-submitted models. Selling price is
+ * never stored here — it's derived from `weightInGrams` + `materialType` by
+ * `getProductPrice` (see lib/pricing.ts) every time it's needed, so editing
+ * either field automatically recalculates the price everywhere. Add another
+ * piece by adding an entry here and its photo at
+ * public/media/products/<slug>.jpg — nothing else to touch.
  */
 export const PRODUCTS: Product[] = [
   {
     slug: "kunai",
     name: "Kunai",
     category: "Prop",
-    price: 1450,
+    weightInGrams: 60,
+    materialType: "PLA",
     material: "PLA",
     finish: "Matte black",
     dimensionsMm: { width: 220, depth: 35, height: 10 },
@@ -80,7 +89,8 @@ export const PRODUCTS: Product[] = [
     slug: "tentacle",
     name: "Tentacle",
     category: "Sculpture",
-    price: 2800,
+    weightInGrams: 180,
+    materialType: "Exotic",
     material: "Resin",
     finish: "Smooth, pearl white",
     dimensionsMm: { width: 70, depth: 70, height: 150 },
@@ -96,7 +106,8 @@ export const PRODUCTS: Product[] = [
     slug: "shuriken-four-point",
     name: "Shuriken — Four Point",
     category: "Prop",
-    price: 950,
+    weightInGrams: 45,
+    materialType: "PETG",
     material: "PETG",
     finish: "Matte black",
     dimensionsMm: { width: 90, depth: 90, height: 6 },
@@ -110,7 +121,8 @@ export const PRODUCTS: Product[] = [
     slug: "pen-holder-figure",
     name: "Pen Holder Figure",
     category: "Object",
-    price: 1950,
+    weightInGrams: 160,
+    materialType: "PETG",
     material: "PETG",
     finish: "Matte black",
     dimensionsMm: { width: 85, depth: 85, height: 140 },
@@ -124,7 +136,8 @@ export const PRODUCTS: Product[] = [
     slug: "corset-vase",
     name: "Corset Vase",
     category: "Vessel",
-    price: 2200,
+    weightInGrams: 220,
+    materialType: "PLA",
     material: "PLA",
     finish: "Matte white",
     dimensionsMm: { width: 95, depth: 95, height: 180 },
@@ -138,7 +151,8 @@ export const PRODUCTS: Product[] = [
     slug: "shuriken-eight-point",
     name: "Shuriken — Eight Point",
     category: "Prop",
-    price: 1100,
+    weightInGrams: 55,
+    materialType: "Exotic",
     material: "ABS",
     finish: "Matte black",
     dimensionsMm: { width: 100, depth: 100, height: 6 },
@@ -152,7 +166,8 @@ export const PRODUCTS: Product[] = [
     slug: "shuriken-three-point",
     name: "Shuriken — Three Point",
     category: "Prop",
-    price: 750,
+    weightInGrams: 35,
+    materialType: "PLA",
     material: "PLA",
     finish: "Matte black",
     dimensionsMm: { width: 85, depth: 85, height: 6 },
@@ -166,7 +181,8 @@ export const PRODUCTS: Product[] = [
     slug: "celtic-coaster",
     name: "Celtic Coaster",
     category: "Object",
-    price: 650,
+    weightInGrams: 50,
+    materialType: "PETG",
     material: "PETG",
     finish: "Matte black",
     dimensionsMm: { width: 100, depth: 100, height: 8 },
@@ -180,7 +196,8 @@ export const PRODUCTS: Product[] = [
     slug: "jewellery-stand",
     name: "Jewellery Stand",
     category: "Object",
-    price: 2400,
+    weightInGrams: 210,
+    materialType: "PLA",
     material: "PLA",
     finish: "Matte black",
     dimensionsMm: { width: 90, depth: 90, height: 200 },
@@ -194,7 +211,8 @@ export const PRODUCTS: Product[] = [
     slug: "makeup-organizer",
     name: "Makeup Organizer",
     category: "Object",
-    price: 2600,
+    weightInGrams: 420,
+    materialType: "PETG",
     material: "PETG",
     finish: "Matte black",
     dimensionsMm: { width: 180, depth: 120, height: 130 },
@@ -208,7 +226,8 @@ export const PRODUCTS: Product[] = [
     slug: "crystal-phone-stand",
     name: "Crystal Phone Stand",
     category: "Object",
-    price: 1350,
+    weightInGrams: 140,
+    materialType: "PLA",
     material: "PLA",
     finish: "Matte charcoal",
     dimensionsMm: { width: 110, depth: 80, height: 100 },
@@ -222,7 +241,8 @@ export const PRODUCTS: Product[] = [
     slug: "ashtray",
     name: "Ashtray",
     category: "Vessel",
-    price: 850,
+    weightInGrams: 180,
+    materialType: "PETG",
     material: "PETG",
     finish: "Matte black",
     dimensionsMm: { width: 150, depth: 150, height: 40 },
@@ -232,10 +252,94 @@ export const PRODUCTS: Product[] = [
     availability: "available",
     creator: "FORMA Studio",
   },
+  {
+    slug: "block-buddy",
+    name: "Block Buddy",
+    category: "Figure",
+    weightInGrams: 80,
+    materialType: "PLA",
+    material: "PLA",
+    finish: "Matte orange",
+    dimensionsMm: { width: 70, depth: 45, height: 65 },
+    description: "A blocky, pixel-art desk companion with a wide grin of button eyes.",
+    story: "Modeled straight off a voxel sprite — every edge kept sharp and squared, no smoothing, so it reads as pixel art in three dimensions.",
+    imageId: "block-buddy",
+    availability: "available",
+    creator: "Pixel Foundry",
+  },
+  {
+    slug: "spider-emblem-coaster",
+    name: "Spider Emblem Coaster",
+    category: "Object",
+    weightInGrams: 90,
+    materialType: "PETG",
+    material: "PETG",
+    finish: "Matte black",
+    dimensionsMm: { width: 90, depth: 45, height: 10 },
+    description: "A pair of square coasters, each stamped with a raised eight-legged emblem.",
+    story: "Sold as a matched pair — the same emblem mould run twice, so the two tiles sit flush side by side or split across two drinks.",
+    imageId: "spider-emblem-coaster",
+    availability: "available",
+    creator: "Studio Ronin",
+  },
+  {
+    slug: "rayquaza-figurine",
+    name: "Rayquaza Figurine",
+    category: "Figure",
+    weightInGrams: 25,
+    materialType: "Exotic",
+    material: "Resin",
+    finish: "Smooth, gunmetal black",
+    dimensionsMm: { width: 90, depth: 90, height: 140 },
+    description: "A coiled Rayquaza figurine, cast mid-strike on a display base.",
+    story: "The most detailed sculpt in the collection — resin-printed at a slow layer height, thin-walled and hollow, to keep every scale and claw crisp. Produced in small batches.",
+    imageId: "rayquaza-figurine",
+    availability: "limited",
+    creator: "Lumen Forge",
+  },
+  {
+    slug: "hexapod-mug-stand",
+    name: "Hexapod Mug Stand",
+    category: "Object",
+    weightInGrams: 150,
+    materialType: "PETG",
+    material: "PETG",
+    finish: "Matte black",
+    dimensionsMm: { width: 150, depth: 150, height: 70 },
+    description: "A six-legged mechanical stand lifting a branded landing-pad platform sized to hold a mug.",
+    story: "Each leg is printed as a single interlocking joint — no pins, no glue — so the stand flexes slightly under load instead of cracking.",
+    imageId: "hexapod-mug-stand",
+    availability: "available",
+    creator: "Vantage Collective",
+  },
+  {
+    slug: "scraper",
+    name: "Scraper",
+    category: "Tool",
+    weightInGrams: 35,
+    materialType: "PLA",
+    material: "PLA",
+    finish: "Matte black",
+    dimensionsMm: { width: 60, depth: 6, height: 140 },
+    description: "A flat-bladed scraper with an angled edge and a cutout handle — for labels, ice, or dried paint.",
+    story: "One continuous silhouette, no assembly — the cutout handle is sized for a firm grip without sliding.",
+    imageId: "scraper",
+    availability: "available",
+    creator: "Studio Quiet",
+  },
 ];
 
 export function getProduct(slug: string) {
   return PRODUCTS.find((p) => p.slug === slug);
+}
+
+/**
+ * The selling price for a catalog product, computed fresh from its weight
+ * and material every call — see lib/pricing.ts. Never read/store a price
+ * anywhere else in the catalog layer.
+ */
+export function getProductPrice(product: Pick<Product, "weightInGrams" | "materialType">) {
+  return calculateProductPrice(product.weightInGrams, product.materialType);
 }
 
 export const FOOTER_LINKS = {

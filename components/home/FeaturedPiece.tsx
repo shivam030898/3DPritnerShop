@@ -4,7 +4,7 @@ import { useLayoutEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight } from "lucide-react";
-import { PRODUCTS, productImage } from "@/lib/constants";
+import { PRODUCTS, getProductPrice, productImage } from "@/lib/constants";
 import { formatINR } from "@/lib/utils";
 import { gsap, ScrollTrigger } from "@/lib/gsap";
 import Button from "@/components/ui/Button";
@@ -51,7 +51,7 @@ export default function FeaturedPiece() {
             {PRODUCT.name}
           </h2>
           <p className="fp-reveal mt-4 max-w-md text-text-dim">{PRODUCT.story}</p>
-          <p className="fp-reveal text-display mt-6 text-2xl text-text">{formatINR(PRODUCT.price)}</p>
+          <p className="fp-reveal text-display mt-6 text-2xl text-text">{formatINR(getProductPrice(PRODUCT))}</p>
           <div className="fp-reveal mt-7">
             <Button as="link" href={`/designs/${PRODUCT.slug}`} size="lg">
               View piece

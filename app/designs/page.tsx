@@ -54,7 +54,6 @@ function DesignsContent() {
     <div className="mx-auto max-w-6xl px-5 py-14 md:py-20">
       <div className="max-w-xl">
         <p className="text-mono-label text-xs text-text-faint">The Collection</p>
-        <h1 className="text-display mt-3 text-3xl text-text md:text-4xl">{PRODUCTS.length} pieces.</h1>
         <p className="mt-3 text-text-dim">
           Each one designed, printed and finished individually. No configurator, no variants — what you see is what arrives.
         </p>

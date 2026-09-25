@@ -1,16 +1,44 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion, useMotionValue, useSpring, useTransform, type MotionValue } from "framer-motion";
 import { ArrowRight, ShieldCheck } from "lucide-react";
-import { PRODUCTS, productImage } from "@/lib/constants";
+import { PRODUCTS, getProductPrice, productImage } from "@/lib/constants";
 import { formatINR, cn } from "@/lib/utils";
 import Button from "@/components/ui/Button";
 
 const EASE = [0.16, 1, 0.3, 1] as const;
-const FROM_PRICE = Math.min(...PRODUCTS.map((p) => p.price));
+const FROM_PRICE = Math.min(...PRODUCTS.map(getProductPrice));
+
+// Bubbles rise in staggered, one after another — this is the per-bubble
+// delay step, and stays inside the 0.12–0.25s range that reads as an
+// intentional cascade rather than a synchronized pop or a sluggish crawl.
+const ENTRANCE_STAGGER = 0.16;
+
+/** True once we know the visitor's OS-level reduced-motion preference —
+ *  starts false (matches SSR) and updates after mount, so the continuous
+ *  idle drift never runs for anyone who has asked for less motion. */
+function usePrefersReducedMotion() {
+  const [reduced, setReduced] = useState(
+    () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
+
+  useEffect(() => {
+    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const onChange = (e: MediaQueryListEvent) => setReduced(e.matches);
+    query.addEventListener("change", onChange);
+    return () => query.removeEventListener("change", onChange);
+  }, []);
+
+  return reduced;
+}
+
+// Every floating circle is exactly this size at a given breakpoint — one
+// shared value, not a per-item one, so the set reads as a single consistent
+// system rather than a mix of small/medium/large bubbles.
+const CIRCLE_SIZE = "w-24 sm:w-32 lg:w-40";
 
 type Layer = "back" | "middle" | "front";
 
@@ -18,101 +46,122 @@ type ModelSpec = {
   slug: string;
   layer: Layer;
   position: string;
-  size: string;
   rotate: number;
+  /** One full idle drift cycle, in seconds — kept well outside the entrance
+   *  animation's duration so the two never visually overlap in speed. */
   floatDuration: number;
+  /** Extra phase offset added after this bubble's entrance finishes, so
+   *  idle drift starts at a slightly different moment for every bubble. */
   floatDelay: number;
+  /** Idle drift amplitude, in px/deg — tiny, physical-object-sized motion.
+   *  Signs vary per bubble so neighbors drift in different directions. */
+  floatX: number;
+  floatY: number;
+  floatRotate: number;
 };
 
 // Layer controls visibility per breakpoint (front: always, middle: sm+, back: lg+),
-// parallax reach, opacity and drop-shadow strength — see LAYER_STYLE below.
+// parallax reach and drop-shadow strength — see LAYER_STYLE below. Size and
+// opacity are intentionally NOT layer-dependent anymore — every circle is
+// the same size, fully opaque, so depth reads only through shadow/parallax.
 const MODELS: ModelSpec[] = [
   {
     slug: "kunai",
     layer: "front",
     position: "left-[2%] top-[16%] sm:left-[5%]",
-    size: "w-32 sm:w-40 lg:w-52",
     rotate: -6,
-    floatDuration: 5.6,
+    floatDuration: 6.2,
     floatDelay: 0,
+    floatX: 10,
+    floatY: -12,
+    floatRotate: 3,
   },
   {
     slug: "shuriken-three-point",
     layer: "front",
     position: "right-[2%] bottom-[6%] sm:right-[5%]",
-    size: "w-32 sm:w-40 lg:w-52",
     rotate: 5,
-    floatDuration: 6.4,
+    floatDuration: 7.4,
     floatDelay: 0.6,
+    floatX: -13,
+    floatY: 9,
+    floatRotate: -2.5,
   },
   {
     slug: "tentacle",
     layer: "middle",
     position: "right-[6%] top-[14%] sm:right-[10%]",
-    size: "w-24 sm:w-28 lg:w-36",
     rotate: 4,
-    floatDuration: 5.0,
+    floatDuration: 5.4,
     floatDelay: 0.3,
+    floatX: 8,
+    floatY: 11,
+    floatRotate: 2,
   },
   {
     slug: "pen-holder-figure",
     layer: "middle",
     position: "left-[6%] bottom-[3%] sm:left-[11%]",
-    size: "w-24 sm:w-28 lg:w-36",
     rotate: -4,
-    floatDuration: 6.0,
+    floatDuration: 8.1,
     floatDelay: 0.9,
+    floatX: -11,
+    floatY: -14,
+    floatRotate: -3.5,
   },
   {
     slug: "shuriken-four-point",
     layer: "middle",
     position: "left-[0%] top-1/2 -translate-y-1/2 sm:left-[1%]",
-    size: "w-20 sm:w-24 lg:w-32",
     rotate: -3,
-    floatDuration: 5.3,
+    floatDuration: 5.8,
     floatDelay: 1.2,
+    floatX: 14,
+    floatY: 8,
+    floatRotate: 2.8,
   },
   {
     slug: "celtic-coaster",
     layer: "back",
     position: "right-[0%] top-1/2 -translate-y-1/2 sm:right-[2%]",
-    size: "w-16 lg:w-24",
     rotate: 3,
-    floatDuration: 4.7,
+    floatDuration: 6.7,
     floatDelay: 0.4,
+    floatX: -9,
+    floatY: 13,
+    floatRotate: -3,
   },
   {
     slug: "corset-vase",
     layer: "back",
     position: "left-[22%] top-[16%]",
-    size: "w-14 lg:w-20",
     rotate: -2,
-    floatDuration: 5.9,
+    floatDuration: 8.6,
     floatDelay: 0.8,
+    floatX: 12,
+    floatY: -10,
+    floatRotate: 3.4,
   },
 ];
 
 const LAYER_STYLE: Record<
   Layer,
-  { visibility: string; opacity: string; shadow: string; z: string; parallax: number }
+  { visibility: string; shadow: string; z: string; parallax: number }
 > = {
   back: {
     visibility: "hidden lg:block",
-    opacity: "opacity-50",
     shadow: "drop-shadow-[0_14px_18px_rgba(0,0,0,0.12)]",
     z: "z-0",
     parallax: 3,
   },
   middle: {
     visibility: "hidden sm:block",
-    opacity: "opacity-90",
     shadow: "drop-shadow-[0_18px_22px_rgba(0,0,0,0.14)]",
     z: "z-10",
     parallax: 5,
   },
   front: {
     visibility: "block",
-    opacity: "opacity-100",
     shadow: "drop-shadow-[0_24px_28px_rgba(0,0,0,0.18)]",
     z: "z-20",
     parallax: 9,
@@ -178,7 +227,7 @@ export default function Hero() {
         className="pointer-events-none absolute inset-0 z-[2]"
         style={{
           background:
-            "radial-gradient(ellipse 42% 38% at 50% 48%, var(--color-accent-soft), transparent 72%)",
+            "radial-gradient(ellipse 42% 38% at 50% 48%, var(--hero-glow), transparent 72%)",
         }}
       />
 
@@ -199,7 +248,7 @@ export default function Hero() {
             transition={{ duration: 0.5, delay: 0.7, ease: EASE }}
             className="text-mono-label text-xs text-[#E8D8B8] [text-shadow:0_1px_10px_rgba(0,0,0,0.45)]"
           >
-            The Collection
+            The Objects
           </motion.p>
 
           <motion.h1
@@ -208,9 +257,9 @@ export default function Hero() {
             transition={{ duration: 0.55, delay: 0.78, ease: EASE }}
             className="text-display mt-3 text-[clamp(2rem,4vw,2.75rem)] leading-[1.05] text-white [text-shadow:0_2px_18px_rgba(0,0,0,0.5)]"
           >
-            Objects worth
+            Objects made
             <br />
-            collecting.
+            to be collected.
           </motion.h1>
 
           <motion.p
@@ -219,7 +268,7 @@ export default function Hero() {
             transition={{ duration: 0.5, delay: 0.86, ease: EASE }}
             className="mt-3 max-w-[32ch] text-sm text-white/80 [text-shadow:0_2px_14px_rgba(0,0,0,0.45)]"
           >
-            {PRODUCTS.length} pieces, professionally designed, printed and finished — a small collection, not a catalog.
+            A curated series of sculptural pieces, designed, printed, and finished with intention.
           </motion.p>
 
           <motion.div
@@ -271,54 +320,77 @@ function HeroModel({
   const reach = style.parallax;
   const x = useTransform(springX, [-1, 1], [-reach, reach]);
   const y = useTransform(springY, [-1, 1], [-reach, reach]);
+  const reduceMotion = usePrefersReducedMotion();
+
+  // Entrance: this bubble's resting position (spec.position) is the anchor —
+  // it rises into place from below, like a bubble floating up from
+  // underwater, then hands off to the idle drift loop below.
+  const entranceDuration = 1.3 + (index % 3) * 0.2; // 1.2–1.8s
+  const entranceDelay = index * ENTRANCE_STAGGER;
+  const entranceStartY = 120 + (index % 3) * 25; // 100–180px below rest
+  const entranceStartScale = index % 2 === 0 ? 0.86 : 0.89; // 0.85–0.9
+
+  // Idle drift only starts once this bubble has fully settled, so the two
+  // animations never run at the same time.
+  const idleStartDelay = entranceDelay + entranceDuration + spec.floatDelay;
 
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.85 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.6, delay: index * 0.07, ease: EASE }}
       style={{ x, y }}
-      className={cn("absolute", spec.position, spec.size, style.visibility, style.z)}
+      className={cn("absolute", spec.position, CIRCLE_SIZE, style.visibility, style.z)}
     >
-      {/* Floating loop — isolated from the parallax transform above so both can run independently. */}
+      {/* Entrance — rises from below into this bubble's anchor position, then never moves again. */}
       <motion.div
-        animate={{ y: [0, -8, 0] }}
-        transition={{
-          duration: spec.floatDuration,
-          delay: spec.floatDelay,
-          repeat: Infinity,
-          ease: "easeInOut",
-        }}
+        initial={{ opacity: 0, y: entranceStartY, scale: entranceStartScale }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: entranceDuration, delay: entranceDelay, ease: EASE }}
       >
+        {/* Idle drift — tiny, slow, out-of-phase per bubble; disabled for prefers-reduced-motion. */}
         <motion.div
-          whileHover={{ opacity: 1 }}
-          transition={{ duration: 0.25, ease: EASE }}
-          style={{ rotate: spec.rotate }}
-          className={cn("group relative cursor-pointer", style.opacity, style.shadow)}
+          animate={
+            reduceMotion
+              ? undefined
+              : {
+                  x: [0, spec.floatX, 0, -spec.floatX * 0.6, 0],
+                  y: [0, spec.floatY, 0, -spec.floatY * 0.6, 0],
+                  rotate: [0, spec.floatRotate, 0, -spec.floatRotate * 0.6, 0],
+                }
+          }
+          transition={{
+            duration: spec.floatDuration,
+            delay: idleStartDelay,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
         >
-          <Link href={`/designs/${product.slug}`} className="block">
-            {/* Only this circle scales on hover — the wrapper above (rotation,
-                drop-shadow, group-hover trigger for the caption) stays put, so
-                nothing around the image jumps or shifts. */}
-            <motion.div
-              whileHover={{ scale: 1.1 }}
-              transition={{ duration: 0.25, ease: EASE }}
-              className="aspect-square overflow-hidden rounded-full bg-surface-2"
-            >
-              <Image
-                src={productImage(product.imageId)}
-                alt={product.name}
-                width={300}
-                height={300}
-                className="h-full w-full object-cover transition-[filter] duration-200 ease-out group-hover:brightness-105"
-              />
-            </motion.div>
-            <div className="pointer-events-none absolute inset-x-0 -bottom-6 flex flex-col items-center opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-              <p className="max-w-full truncate rounded-full bg-text px-2.5 py-1 text-[10px] font-medium text-bg shadow-card">
-                {product.name} · {formatINR(product.price)}
-              </p>
-            </div>
-          </Link>
+          <motion.div
+            style={{ rotate: spec.rotate }}
+            className={cn("group relative cursor-pointer", style.shadow)}
+          >
+            <Link href={`/designs/${product.slug}`} className="block">
+              {/* Only this circle scales on hover — the wrapper above (rotation,
+                  drop-shadow, group-hover trigger for the caption) stays put, so
+                  nothing around the image jumps or shifts. */}
+              <motion.div
+                whileHover={{ scale: 1.1 }}
+                transition={{ duration: 0.25, ease: EASE }}
+                className="aspect-square overflow-hidden rounded-full bg-surface-2"
+              >
+                <Image
+                  src={productImage(product.imageId)}
+                  alt={product.name}
+                  width={300}
+                  height={300}
+                  className="h-full w-full object-cover transition-[filter] duration-200 ease-out group-hover:brightness-105"
+                />
+              </motion.div>
+              <div className="pointer-events-none absolute inset-x-0 -bottom-6 flex flex-col items-center opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+                <p className="max-w-full truncate rounded-full bg-text px-2.5 py-1 text-[10px] font-medium text-bg shadow-card">
+                  {product.name} · {formatINR(getProductPrice(product))}
+                </p>
+              </div>
+            </Link>
+          </motion.div>
         </motion.div>
       </motion.div>
     </motion.div>
