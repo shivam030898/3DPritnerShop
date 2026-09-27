@@ -24,8 +24,15 @@ export const PROFIT_MULTIPLIER = 2;
  * baseCost = materialCost + SHIPPING_COST + MARKETING_COST
  * priceBeforeRounding = baseCost × PROFIT_MULTIPLIER
  * finalPrice = priceBeforeRounding rounded to the nearest ₹100
+ *
+ * Returns null when the weight isn't verified yet — a product with no
+ * confirmed print weight gets no price, never a guessed one.
  */
-export function calculateProductPrice(weightInGrams: number, materialType: MaterialType): number {
+export function calculateProductPrice(
+  weightInGrams: number | null,
+  materialType: MaterialType
+): number | null {
+  if (weightInGrams === null) return null;
   const materialCost = weightInGrams * MATERIAL_RATES[materialType];
   const baseCost = materialCost + SHIPPING_COST + MARKETING_COST;
   const priceBeforeRounding = baseCost * PROFIT_MULTIPLIER;

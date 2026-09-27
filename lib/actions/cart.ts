@@ -65,11 +65,13 @@ export async function addToCartAction(rawItem: NewCartItem): Promise<CartResult>
   // product, so re-price it from the catalog itself before writing.
   const product = getProduct(rawItem.slug);
   if (!product) return { ok: false, error: "That piece is no longer available." };
+  const unitPrice = getProductPrice(product);
+  if (unitPrice === null) return { ok: false, error: "That piece isn't available for purchase yet." };
   const item: NewCartItem = {
     ...rawItem,
     name: product.name,
     imageId: product.imageId,
-    unitPrice: getProductPrice(product),
+    unitPrice,
   };
 
   const configKey = buildConfigKey(item);
@@ -157,13 +159,15 @@ export async function mergeGuestCartAction(guestItems: CartLineItem[]): Promise<
 
     const existingRows = await getCartRows(userId);
     // Reprice every incoming line from the catalog — never trust a guest
-    // snapshot's price — and drop any line for a product that no longer exists.
+    // snapshot's price — and drop any line for a product that no longer
+    // exists or no longer has a verified price.
     const repriced = guestItems
       .map((item) => {
         const product = getProduct(item.slug);
-        return product
-          ? { ...item, name: product.name, imageId: product.imageId, unitPrice: getProductPrice(product) }
-          : null;
+        if (!product) return null;
+        const unitPrice = getProductPrice(product);
+        if (unitPrice === null) return null;
+        return { ...item, name: product.name, imageId: product.imageId, unitPrice };
       })
       .filter((item): item is CartLineItem => item !== null);
     const merged = mergeCartItems(existingRows, repriced);

@@ -4,7 +4,7 @@ import { useLayoutEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight } from "lucide-react";
-import { PRODUCTS, getProductPrice, productImage } from "@/lib/constants";
+import { PRODUCTS, getProductPrice, productMedia } from "@/lib/constants";
 import { formatINR } from "@/lib/utils";
 import { gsap, ScrollTrigger } from "@/lib/gsap";
 import Button from "@/components/ui/Button";
@@ -13,6 +13,7 @@ const PRODUCT = PRODUCTS.find((p) => p.slug === "kunai")!;
 
 export default function FeaturedPiece() {
   const sectionRef = useRef<HTMLElement>(null);
+  const price = getProductPrice(PRODUCT);
 
   useLayoutEffect(() => {
     const ctx = gsap.context(() => {
@@ -35,13 +36,13 @@ export default function FeaturedPiece() {
   return (
     <section ref={sectionRef} className="border-y border-border bg-surface px-5 py-20 md:py-28">
       <div className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-10 lg:grid-cols-2 lg:gap-20">
-        <div className="fp-reveal relative aspect-[4/5] overflow-hidden bg-surface-2 lg:order-2">
+        <div className="fp-reveal relative aspect-[4/5] overflow-hidden bg-surface-2 p-10 md:p-14 lg:order-2">
           <Image
-            src={productImage(PRODUCT.imageId)}
+            src={productMedia(PRODUCT.imageId)}
             alt={PRODUCT.name}
             fill
             sizes="(max-width: 1024px) 100vw, 50vw"
-            className="object-cover"
+            className="object-contain"
           />
         </div>
 
@@ -51,7 +52,9 @@ export default function FeaturedPiece() {
             {PRODUCT.name}
           </h2>
           <p className="fp-reveal mt-4 max-w-md text-text-dim">{PRODUCT.story}</p>
-          <p className="fp-reveal text-display mt-6 text-2xl text-text">{formatINR(getProductPrice(PRODUCT))}</p>
+          <p className="fp-reveal text-display mt-6 text-2xl text-text">
+            {price !== null ? formatINR(price) : "Price unavailable"}
+          </p>
           <div className="fp-reveal mt-7">
             <Button as="link" href={`/designs/${PRODUCT.slug}`} size="lg">
               View piece

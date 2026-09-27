@@ -56,19 +56,22 @@ export default function Navbar() {
     router.push(q ? `/designs?q=${encodeURIComponent(q)}` : "/designs");
   };
 
-  // Bright white whenever the navbar sits over something dark: once scrolled
-  // (solid black bg, any page) or at rest on the homepage (transparent, over
-  // the hero video). On every other page, "at rest" means the navbar is
-  // transparent over the plain page background — there's no dark backdrop to
-  // fight there, so the normal --color-text tokens (dark in light mode,
-  // light in dark mode) apply instead, or the white would be unreadable
-  // against a light page.
+  // Bright white applies in exactly one case: at rest on the homepage,
+  // transparent over the busy hero video, where the normal theme text
+  // color (dark in light mode) would be unreadable. Everywhere else —
+  // scrolled (solid `bg-surface`, which is already white in light mode /
+  // near-black in dark mode) or at rest on any other page (transparent
+  // over the plain page background) — the navbar sits over a surface that
+  // already matches the current theme, so the normal --color-text tokens
+  // (dark-on-light / light-on-dark) are exactly what's needed. Forcing
+  // white here was the bug: it made the scrolled navbar look permanently
+  // dark-mode even while the site was in light mode.
   //
   // Scoped per-element rather than on the whole header, so it never reaches
   // components with their own opaque fill — the avatar pill, the open search
   // input, the Upload button — which already contrast correctly against
   // their own background and would break if forced white too.
-  const forceWhite = scrolled || pathname === "/";
+  const forceWhite = !scrolled && pathname === "/";
   const navFgStyle = forceWhite
     ? ({
         "--color-text": "#ffffff",
@@ -86,7 +89,7 @@ export default function Navbar() {
       <header
         className={cn(
           "fixed inset-x-0 top-0 z-40 transition-colors duration-[250ms] ease-out",
-          scrolled ? "bg-black" : "bg-transparent"
+          scrolled ? "bg-surface" : "bg-transparent"
         )}
       >
         <nav className="relative mx-auto flex h-16 max-w-[1400px] items-center justify-between px-5 md:px-8">

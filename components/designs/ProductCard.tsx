@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Plus } from "lucide-react";
 import type { Product } from "@/lib/constants";
-import { getProductPrice, productImage } from "@/lib/constants";
+import { getProductPrice, productThumb } from "@/lib/constants";
 import { formatINR } from "@/lib/utils";
 import { useCart } from "@/lib/useCart";
 import { toast } from "@/lib/toastStore";
@@ -18,13 +18,14 @@ export default function ProductCard({
   saved?: boolean;
 }) {
   const { addItem } = useCart();
-  const soldOut = product.availability === "sold-out";
   const price = getProductPrice(product);
+  const soldOut = product.availability === "sold-out";
+  const canAdd = !soldOut && price !== null;
 
   const handleQuickAdd = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (soldOut) return;
+    if (!canAdd || price === null) return;
     addItem({
       slug: product.slug,
       name: product.name,
@@ -37,13 +38,13 @@ export default function ProductCard({
 
   return (
     <Link href={`/designs/${product.slug}`} className="group flex cursor-pointer flex-col">
-      <div className="relative aspect-[4/5] overflow-hidden bg-surface-2">
+      <div className="relative aspect-[4/5] overflow-hidden bg-surface-2 p-6 sm:p-7">
         <Image
-          src={productImage(product.imageId)}
+          src={productThumb(product.imageId)}
           alt={product.name}
           fill
           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-          className="object-cover transition-[transform,filter] duration-500 ease-out group-hover:scale-[1.04] group-hover:brightness-[1.03]"
+          className="object-contain p-1 transition-transform duration-500 ease-out group-hover:scale-[1.04]"
         />
 
         <div className="absolute right-3 top-3 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
@@ -56,7 +57,7 @@ export default function ProductCard({
           </p>
         )}
 
-        {!soldOut && (
+        {canAdd && (
           <button
             type="button"
             onClick={handleQuickAdd}
@@ -79,7 +80,9 @@ export default function ProductCard({
           <p className="truncate text-sm text-text">{product.name}</p>
           <p className="mt-0.5 text-xs text-text-faint">{product.category}</p>
         </div>
-        <p className="shrink-0 text-sm text-text-dim">{formatINR(price)}</p>
+        <p className="shrink-0 text-sm text-text-dim">
+          {price !== null ? formatINR(price) : "Price unavailable"}
+        </p>
       </div>
     </Link>
   );

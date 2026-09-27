@@ -2,14 +2,14 @@
 
 import { use, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { notFound, useRouter } from "next/navigation";
 import { Truck } from "lucide-react";
-import { PRODUCTS, getProductPrice, productImage } from "@/lib/constants";
+import { COLORS, PRODUCTS, formatPrintSpec, getProductPrice, productMedia, productVideo } from "@/lib/constants";
 import { useCart } from "@/lib/useCart";
-import { formatINR } from "@/lib/utils";
+import { cn, formatINR } from "@/lib/utils";
 import QuantityStepper from "@/components/ui/QuantityStepper";
 import Button from "@/components/ui/Button";
+import ProductMediaGallery, { type GalleryMediaItem } from "@/components/designs/ProductMediaGallery";
 import { gsap } from "@/lib/gsap";
 
 export default function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -21,10 +21,27 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
   const { addItem } = useCart();
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
+  const [selectedColor, setSelectedColor] = useState(product.colorOptions?.[0]?.key);
   const rootRef = useRef<HTMLDivElement>(null);
+
+  const activeColor = product.colorOptions?.find((c) => c.key === selectedColor);
+  const activeImageId = activeColor?.imageId ?? product.imageId;
+  const galleryImageIds = activeColor?.galleryImageIds ?? product.galleryImageIds ?? [];
+
+  const media: GalleryMediaItem[] = [
+    { type: "image", src: productMedia(activeImageId) },
+    ...galleryImageIds.map((id): GalleryMediaItem => ({ type: "image", src: productMedia(id) })),
+    ...(product.demoVideoId
+      ? [{ type: "video", src: productVideo(product.demoVideoId), poster: productMedia(activeImageId) } as GalleryMediaItem]
+      : []),
+  ];
 
   const soldOut = product.availability === "sold-out";
   const price = getProductPrice(product);
+  const canPurchase = !soldOut && price !== null;
+  const dimensionsText = product.dimensionsMm
+    ? `${fmtMm(product.dimensionsMm.width)} × ${fmtMm(product.dimensionsMm.depth)} × ${fmtMm(product.dimensionsMm.height)} mm`
+    : product.dimensionsLabel;
 
   useLayoutEffect(() => {
     const ctx = gsap.context(() => {
@@ -42,17 +59,17 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
     name: product.name,
     imageId: product.imageId,
     quantity,
-    unitPrice: price,
+    unitPrice: price!,
   });
 
   const handleAddToCart = () => {
-    if (soldOut) return;
+    if (!canPurchase) return;
     addItem(buildItem());
     setAdded(true);
   };
 
   const handleBuyNow = () => {
-    if (soldOut) return;
+    if (!canPurchase) return;
     addItem(buildItem());
     router.push("/cart");
   };
@@ -60,45 +77,74 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
   return (
     <div ref={rootRef} className="mx-auto max-w-6xl px-5 py-10 md:py-14">
       <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1fr_420px] lg:gap-16">
-        <div className="pd-image relative aspect-square overflow-hidden bg-surface-2 sm:aspect-[4/5]">
-          <Image
-            src={productImage(product.imageId)}
-            alt={product.name}
-            fill
-            sizes="(max-width: 1024px) 100vw, 55vw"
-            className="object-cover"
-            priority
-          />
-          {product.availability === "limited" && (
-            <p className="text-mono-label absolute left-4 top-4 text-[11px] text-white [text-shadow:0_1px_6px_rgba(0,0,0,0.6)]">
-              Limited
-            </p>
-          )}
-        </div>
+        <ProductMediaGallery
+          productName={product.name}
+          media={media}
+          limited={product.availability === "limited"}
+        />
 
         <div className="lg:pt-2">
           <p className="pd-eyebrow text-xs text-text-faint">{product.category} · by {product.creator}</p>
           <h1 className="pd-title text-display mt-2 text-3xl leading-[1.05] text-text md:text-4xl">
             {product.name}
           </h1>
-          <p className="pd-detail text-display mt-5 text-2xl text-text">{formatINR(price)}</p>
+          <p className="pd-detail text-display mt-5 text-2xl text-text">
+            {price !== null ? formatINR(price) : "Price unavailable"}
+          </p>
 
           <p className="pd-detail mt-4 max-w-[46ch] text-sm leading-relaxed text-text-dim">
             {product.description}
           </p>
+
+          <div className="pd-detail mt-4 flex flex-col gap-0.5 text-xs text-text-faint">
+            <p>{formatPrintSpec(product)}</p>
+            {dimensionsText && <p>{dimensionsText}</p>}
+          </div>
+
+          {product.colorOptions && product.colorOptions.length > 0 && (
+            <div className="pd-detail mt-6">
+              <p className="text-xs text-text-faint">
+                Color — {product.colorOptions.find((c) => c.key === selectedColor)?.label}
+              </p>
+              <div className="mt-2 flex gap-2">
+                {product.colorOptions.map((c) => {
+                  const hex = COLORS.find((x) => x.key === c.key)?.hex ?? "#999999";
+                  const active = c.key === selectedColor;
+                  return (
+                    <button
+                      key={c.key}
+                      type="button"
+                      onClick={() => setSelectedColor(c.key)}
+                      aria-label={c.label}
+                      aria-current={active}
+                      className={cn(
+                        "h-8 w-8 shrink-0 cursor-pointer rounded-full border-2 transition-colors",
+                        active ? "border-text" : "border-transparent hover:border-border-strong"
+                      )}
+                    >
+                      <span
+                        className="block h-full w-full rounded-full ring-1 ring-inset ring-black/10"
+                        style={{ backgroundColor: hex }}
+                      />
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           <div className="pd-detail mt-8 flex items-center gap-4">
             <QuantityStepper value={quantity} onChange={setQuantity} />
             <Button
               size="lg"
               className="flex-1 justify-center"
-              disabled={soldOut}
+              disabled={!canPurchase}
               onClick={handleAddToCart}
             >
-              {soldOut ? "Sold out" : added ? "Added ✓" : "Add to cart"}
+              {soldOut ? "Sold out" : !canPurchase ? "Price unavailable" : added ? "Added ✓" : "Add to cart"}
             </Button>
           </div>
-          {!soldOut && (
+          {canPurchase && (
             <button
               type="button"
               onClick={handleBuyNow}
@@ -119,10 +165,6 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
           <div className="pd-detail mt-10 grid grid-cols-2 gap-y-3 border-t border-border pt-6 text-sm">
             <Spec label="Material" value={product.material} />
             <Spec label="Finish" value={product.finish} />
-            <Spec
-              label="Dimensions"
-              value={`${Math.round(product.dimensionsMm.width)} × ${Math.round(product.dimensionsMm.depth)} × ${Math.round(product.dimensionsMm.height)} mm`}
-            />
             <Spec label="Availability" value={soldOut ? "Sold out" : product.availability === "limited" ? "Limited" : "In stock"} />
           </div>
 
@@ -145,4 +187,8 @@ function Spec({ label, value }: { label: string; value: string }) {
       <p className="mt-0.5 text-text">{value}</p>
     </div>
   );
+}
+
+function fmtMm(n: number) {
+  return Number.isInteger(n) ? String(n) : n.toFixed(1);
 }

@@ -10,7 +10,8 @@ import { formatINR, cn } from "@/lib/utils";
 import Button from "@/components/ui/Button";
 
 const EASE = [0.16, 1, 0.3, 1] as const;
-const FROM_PRICE = Math.min(...PRODUCTS.map(getProductPrice));
+const PRICED_PRODUCTS = PRODUCTS.map(getProductPrice).filter((p): p is number => p !== null);
+const FROM_PRICE = PRICED_PRODUCTS.length > 0 ? Math.min(...PRICED_PRODUCTS) : null;
 
 // Bubbles rise in staggered, one after another — this is the per-bubble
 // delay step, and stays inside the 0.12–0.25s range that reads as an
@@ -77,7 +78,7 @@ const MODELS: ModelSpec[] = [
     floatRotate: 3,
   },
   {
-    slug: "shuriken-three-point",
+    slug: "hexapod-mug-stand",
     layer: "front",
     position: "right-[2%] bottom-[6%] sm:right-[5%]",
     rotate: 5,
@@ -289,8 +290,12 @@ export default function Hero() {
             transition={{ duration: 0.5, delay: 1.1, ease: EASE }}
             className="mt-5 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px] text-white/70"
           >
-            <span>From {formatINR(FROM_PRICE)}</span>
-            <span>·</span>
+            {FROM_PRICE !== null && (
+              <>
+                <span>From {formatINR(FROM_PRICE)}</span>
+                <span>·</span>
+              </>
+            )}
             <span>2–4 day delivery</span>
             <span>·</span>
             <span className="flex items-center gap-1">
@@ -316,6 +321,7 @@ function HeroModel({
   springY: MotionValue<number>;
 }) {
   const product = PRODUCTS.find((p) => p.slug === spec.slug)!;
+  const bubblePrice = getProductPrice(product);
   const style = LAYER_STYLE[spec.layer];
   const reach = style.parallax;
   const x = useTransform(springX, [-1, 1], [-reach, reach]);
@@ -386,7 +392,8 @@ function HeroModel({
               </motion.div>
               <div className="pointer-events-none absolute inset-x-0 -bottom-6 flex flex-col items-center opacity-0 transition-opacity duration-200 group-hover:opacity-100">
                 <p className="max-w-full truncate rounded-full bg-text px-2.5 py-1 text-[10px] font-medium text-bg shadow-card">
-                  {product.name} · {formatINR(getProductPrice(product))}
+                  {product.name}
+                  {bubblePrice !== null && ` · ${formatINR(bubblePrice)}`}
                 </p>
               </div>
             </Link>
