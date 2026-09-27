@@ -33,7 +33,7 @@ export default function Collection() {
   }, []);
 
   return (
-    <section id="about" ref={sectionRef} className="px-5 py-20 md:py-28">
+    <section ref={sectionRef} className="px-5 py-20 md:py-28">
       <div className="mx-auto max-w-6xl">
         <div className="col-heading flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>

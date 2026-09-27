@@ -1,6 +1,7 @@
 import Hero from "@/components/home/Hero";
 import FeaturedPiece from "@/components/home/FeaturedPiece";
 import Collection from "@/components/home/Collection";
+import About from "@/components/home/About";
 import FinalCta from "@/components/home/FinalCta";
 
 export default function Home() {
@@ -9,6 +10,7 @@ export default function Home() {
       <Hero />
       <FeaturedPiece />
       <Collection />
+      <About />
       <FinalCta />
     </>
   );

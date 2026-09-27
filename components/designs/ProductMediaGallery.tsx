@@ -125,7 +125,7 @@ export default function ProductMediaGallery({
       )}
 
       <div
-        className="pd-image relative flex h-[440px] w-full min-w-0 items-center justify-center overflow-hidden rounded-md bg-surface-2 outline-none focus-visible:ring-2 focus-visible:ring-text/40 sm:h-[560px] lg:h-[680px]"
+        className="pd-image relative flex h-[440px] w-full min-w-0 items-center justify-center overflow-hidden rounded-md bg-white outline-none focus-visible:ring-2 focus-visible:ring-text/40 sm:h-[560px] lg:h-[680px]"
         role="group"
         aria-roledescription="carousel"
         aria-label={`${productName} media`}
@@ -340,7 +340,7 @@ function Thumbnail({
       aria-label={item.type === "video" ? "Play video" : "View product photo"}
       aria-current={active}
       className={cn(
-        "relative h-16 w-16 shrink-0 overflow-hidden rounded-md bg-neutral-900 transition-all duration-200 lg:h-[68px] lg:w-[68px]",
+        "relative h-16 w-16 shrink-0 overflow-hidden rounded-md bg-white transition-all duration-200 lg:h-[68px] lg:w-[68px]",
         active
           ? "ring-2 ring-text ring-offset-2 ring-offset-bg"
           : "opacity-55 hover:opacity-90"

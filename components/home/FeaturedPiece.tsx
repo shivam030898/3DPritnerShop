@@ -36,7 +36,7 @@ export default function FeaturedPiece() {
   return (
     <section ref={sectionRef} className="border-y border-border bg-surface px-5 py-20 md:py-28">
       <div className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-10 lg:grid-cols-2 lg:gap-20">
-        <div className="fp-reveal relative aspect-[4/5] overflow-hidden bg-surface-2 p-10 md:p-14 lg:order-2">
+        <div className="fp-reveal relative aspect-[4/5] overflow-hidden bg-white p-10 md:p-14 lg:order-2">
           <Image
             src={productMedia(PRODUCT.imageId)}
             alt={PRODUCT.name}

@@ -38,7 +38,7 @@ export default function ProductCard({
 
   return (
     <Link href={`/designs/${product.slug}`} className="group flex cursor-pointer flex-col">
-      <div className="relative aspect-[4/5] overflow-hidden bg-surface-2 p-6 sm:p-7">
+      <div className="relative aspect-[4/5] overflow-hidden bg-white p-6 sm:p-7">
         <Image
           src={productThumb(product.imageId)}
           alt={product.name}
