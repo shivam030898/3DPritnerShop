@@ -100,17 +100,6 @@ const MODELS: ModelSpec[] = [
     floatRotate: 2,
   },
   {
-    slug: "pen-holder-figure",
-    layer: "middle",
-    position: "left-[6%] bottom-[3%] sm:left-[11%]",
-    rotate: -4,
-    floatDuration: 8.1,
-    floatDelay: 0.9,
-    floatX: -11,
-    floatY: -14,
-    floatRotate: -3.5,
-  },
-  {
     slug: "shuriken-four-point",
     layer: "middle",
     position: "left-[0%] top-1/2 -translate-y-1/2 sm:left-[1%]",
@@ -382,7 +371,11 @@ function HeroModel({
               <motion.div
                 whileHover={{ scale: 1.1 }}
                 transition={{ duration: 0.25, ease: EASE }}
-                className="aspect-square overflow-hidden rounded-full bg-surface-2"
+                className="relative aspect-square overflow-hidden rounded-full bg-surface-2 ring-1 ring-inset ring-white/50"
+                style={{
+                  boxShadow:
+                    "inset 0 1px 2px rgba(255,255,255,0.7), inset 0 -10px 16px rgba(0,0,0,0.18), 0 8px 20px rgba(0,0,0,0.12)",
+                }}
               >
                 <Image
                   src={productImage(product.imageId)}
@@ -390,6 +383,23 @@ function HeroModel({
                   width={300}
                   height={300}
                   className="h-full w-full object-cover transition-[filter] duration-200 ease-out group-hover:brightness-105"
+                />
+                {/* Liquid-glass sheen — a soft light-catching highlight arced
+                    across the top-left of the bubble, like light refracting
+                    through a glass sphere. Purely decorative (pointer-events
+                    none), sits above the product photo without touching it. */}
+                <div
+                  aria-hidden
+                  className="pointer-events-none absolute inset-0 rounded-full"
+                  style={{
+                    background:
+                      "linear-gradient(135deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.12) 30%, rgba(255,255,255,0) 55%)",
+                  }}
+                />
+                <div
+                  aria-hidden
+                  className="pointer-events-none absolute -left-1/4 -top-1/2 h-1/2 w-3/4 rounded-full opacity-70 blur-md"
+                  style={{ background: "radial-gradient(closest-side, rgba(255,255,255,0.8), rgba(255,255,255,0))" }}
                 />
               </motion.div>
               <div className="pointer-events-none absolute inset-x-0 -bottom-6 flex flex-col items-center opacity-0 transition-opacity duration-200 group-hover:opacity-100">

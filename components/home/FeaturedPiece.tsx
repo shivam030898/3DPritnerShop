@@ -3,17 +3,19 @@
 import { useLayoutEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { motion, useReducedMotion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { PRODUCTS, getProductPrice, productMedia } from "@/lib/constants";
 import { formatINR } from "@/lib/utils";
 import { gsap, ScrollTrigger } from "@/lib/gsap";
 import Button, { ButtonArrow } from "@/components/ui/Button";
 
-const PRODUCT = PRODUCTS.find((p) => p.slug === "kunai")!;
+const PRODUCT = PRODUCTS.find((p) => p.slug === "shuriken-four-point")!;
 
 export default function FeaturedPiece() {
   const sectionRef = useRef<HTMLElement>(null);
   const price = getProductPrice(PRODUCT);
+  const shouldReduceMotion = useReducedMotion();
 
   useLayoutEffect(() => {
     const ctx = gsap.context(() => {
@@ -40,8 +42,28 @@ export default function FeaturedPiece() {
           {/* See ProductCard.tsx: a `fill` image can't be a direct child of
               its own padded parent — position:absolute; inset:0 fills the
               padding box, ignoring that padding entirely. This wrapper is
-              percentage-sized instead, so it actually respects it. */}
-          <div className="relative h-full w-full">
+              percentage-sized instead, so it actually respects it. It also
+              doubles as the spin target: a shuriken is symmetric, so a
+              continuous slow spin on hover reads as "this throwing star is
+              spinning" rather than an arbitrary UI animation.
+              Rest and hover need separate transition configs, not one
+              shared object — the hover spin's `repeat: Infinity` would
+              otherwise also apply to the animation BACK to rest on
+              mouse-leave, so it never actually reached 0° and looked stuck
+              mid-spin. */}
+          <motion.div
+            className="relative h-full w-full cursor-pointer"
+            variants={
+              shouldReduceMotion
+                ? undefined
+                : {
+                    rest: { rotate: 0, transition: { duration: 0.4, ease: "easeOut" } },
+                    hover: { rotate: 360, transition: { duration: 0.6, ease: "linear", repeat: Infinity } },
+                  }
+            }
+            initial="rest"
+            whileHover={shouldReduceMotion ? undefined : "hover"}
+          >
             <Image
               src={productMedia(PRODUCT.imageId)}
               alt={PRODUCT.name}
@@ -49,7 +71,7 @@ export default function FeaturedPiece() {
               sizes="(max-width: 1024px) 100vw, 50vw"
               className="object-contain"
             />
-          </div>
+          </motion.div>
         </div>
 
         <div className="lg:order-1">

@@ -4,9 +4,9 @@ import { use, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { notFound, useRouter } from "next/navigation";
 import { Truck } from "lucide-react";
-import { COLORS, PRODUCTS, formatPrintSpec, getProductPrice, productMedia, productVideo } from "@/lib/constants";
+import { PRODUCTS, formatPrintSpec, getProductPrice, productMedia, productVideo } from "@/lib/constants";
 import { useCart } from "@/lib/useCart";
-import { cn, formatINR } from "@/lib/utils";
+import { formatINR } from "@/lib/utils";
 import QuantityStepper from "@/components/ui/QuantityStepper";
 import Button from "@/components/ui/Button";
 import ProductMediaGallery, { type GalleryMediaItem } from "@/components/designs/ProductMediaGallery";
@@ -21,18 +21,15 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
   const { addItem } = useCart();
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
-  const [selectedColor, setSelectedColor] = useState(product.colorOptions?.[0]?.key);
   const rootRef = useRef<HTMLDivElement>(null);
 
-  const activeColor = product.colorOptions?.find((c) => c.key === selectedColor);
-  const activeImageId = activeColor?.imageId ?? product.imageId;
-  const galleryImageIds = activeColor?.galleryImageIds ?? product.galleryImageIds ?? [];
+  const galleryImageIds = product.galleryImageIds ?? [];
 
   const media: GalleryMediaItem[] = [
-    { type: "image", src: productMedia(activeImageId) },
+    { type: "image", src: productMedia(product.imageId) },
     ...galleryImageIds.map((id): GalleryMediaItem => ({ type: "image", src: productMedia(id) })),
     ...(product.demoVideoId
-      ? [{ type: "video", src: productVideo(product.demoVideoId), poster: productMedia(activeImageId) } as GalleryMediaItem]
+      ? [{ type: "video", src: productVideo(product.demoVideoId), poster: productMedia(product.imageId) } as GalleryMediaItem]
       : []),
   ];
 
@@ -100,38 +97,6 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
             <p>{formatPrintSpec(product)}</p>
             {dimensionsText && <p>{dimensionsText}</p>}
           </div>
-
-          {product.colorOptions && product.colorOptions.length > 0 && (
-            <div className="pd-detail mt-6">
-              <p className="text-xs text-text-faint">
-                Color — {product.colorOptions.find((c) => c.key === selectedColor)?.label}
-              </p>
-              <div className="mt-2 flex gap-2">
-                {product.colorOptions.map((c) => {
-                  const hex = c.hex ?? COLORS.find((x) => x.key === c.key)?.hex ?? "#999999";
-                  const active = c.key === selectedColor;
-                  return (
-                    <button
-                      key={c.key}
-                      type="button"
-                      onClick={() => setSelectedColor(c.key)}
-                      aria-label={c.label}
-                      aria-current={active}
-                      className={cn(
-                        "h-8 w-8 shrink-0 cursor-pointer rounded-full border-2 transition-colors",
-                        active ? "border-text" : "border-transparent hover:border-border-strong"
-                      )}
-                    >
-                      <span
-                        className="block h-full w-full rounded-full ring-1 ring-inset ring-black/10"
-                        style={{ backgroundColor: hex }}
-                      />
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
 
           <div className="pd-detail mt-8 flex items-center gap-4">
             <QuantityStepper value={quantity} onChange={setQuantity} />

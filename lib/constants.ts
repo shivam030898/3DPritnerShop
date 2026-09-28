@@ -11,32 +11,6 @@ export const NAV_LINKS = [
   { label: "About", href: "/#about" },
 ];
 
-export type ColorKey = "black" | "white" | "red" | "blue" | "custom";
-
-export const COLORS: { key: ColorKey; name: string; hex: string }[] = [
-  { key: "black", name: "Black", hex: "#161616" },
-  { key: "white", name: "White", hex: "#f5f5f3" },
-  { key: "red", name: "Red", hex: "#d1352b" },
-  { key: "blue", name: "Blue", hex: "#2f5fd6" },
-  { key: "custom", name: "Custom", hex: "#ff5a1f" },
-];
-
-/** One purchasable piece's available print colors — see `Product.colorOptions`. */
-export type ColorOption = {
-  key: ColorKey;
-  label: string;
-  imageId: string;
-  /**
-   * Swatch color, when this option's real color isn't one of `COLORS`
-   * (e.g. a product whose base/default print is a specific accent color
-   * rather than black/white/red/blue). Falls back to `COLORS[key].hex`
-   * when omitted.
-   */
-  hex?: string;
-  /** Extra angles/detail shots of this specific color — see `Product.galleryImageIds`. */
-  galleryImageIds?: string[];
-};
-
 /**
  * Real photos of the pieces we sell, stored at
  * public/media/products/<imageId>.jpg. `imageId` doubles as the filename —
@@ -74,11 +48,10 @@ export function productThumb(imageId: string) {
 
 /**
  * Every base product photo that has a generated cutout — see `productThumb`.
- * Each of these also has `<id>-red` and `<id>-white` recolor variants
- * (a luminance-based duotone remap of this same cutout, not a separate
- * photo — see the color-swatch feature on the product page), which
- * `THUMB_IMAGE_IDS` below expands out automatically so every color option
- * resolves through `productMedia` without listing all three by hand.
+ * `THUMB_IMAGE_IDS` below also lists a few `-red`/`-white`/`-detail` variant
+ * files left over from a removed color-picker feature; they're unused by any
+ * product entry now but the files still exist on disk, so leaving their ids
+ * registered is harmless and cheaper than reprocessing anything.
  */
 const RECOLORABLE_IMAGE_IDS = [
   "ashtray",
@@ -90,7 +63,6 @@ const RECOLORABLE_IMAGE_IDS = [
   "hexapod-mug-stand",
   "jewellery-stand",
   "makeup-organizer",
-  "modular-desk-organizer",
   "nebula-fox",
   "retro-pixel-blaster",
   "spider-emblem-coaster",
@@ -166,13 +138,6 @@ export type Product = {
    * add a genuinely different, useful view.
    */
   galleryImageIds?: string[];
-  /**
-   * Alternate print colors for this same piece — a display-only preview
-   * swap on the product page. The catalog has no per-color SKU/pricing
-   * system (see lib/cart.ts), so cart/checkout always use the base
-   * `imageId` above regardless of which color is being previewed.
-   */
-  colorOptions?: ColorOption[];
   /** Optional short clip demonstrating how the piece is used — see `productVideo`. */
   demoVideoId?: string;
   availability: Availability;
@@ -208,11 +173,6 @@ export const PRODUCTS: Product[] = [
     story:
       "Modeled from a traditional kunai silhouette and printed flat for a true edge line — the kind of prop that reads as forged, not printed.",
     imageId: "cyber-samurai",
-    colorOptions: [
-      { key: "black", label: "Black", imageId: "cyber-samurai" },
-      { key: "red", label: "Red", imageId: "cyber-samurai-red" },
-      { key: "white", label: "White", imageId: "cyber-samurai-white" },
-    ],
     demoVideoId: "kunai-demo",
     availability: "available",
     creator: "Studio Ronin",
@@ -231,11 +191,6 @@ export const PRODUCTS: Product[] = [
       "A sculptural tentacle headphone stand with fine suction-cup detail, coiling up from a rocky base to cradle your headphones off the desk.",
     story: "Not yet in the verified Bambu print log — weight and price will appear once a finished print is logged. Dimensions shown are an estimate.",
     imageId: "nebula-fox",
-    colorOptions: [
-      { key: "black", label: "Black", imageId: "nebula-fox" },
-      { key: "red", label: "Red", imageId: "nebula-fox-red" },
-      { key: "white", label: "White", imageId: "nebula-fox-white" },
-    ],
     availability: "available",
     creator: "Lumen Forge",
   },
@@ -254,36 +209,8 @@ export const PRODUCTS: Product[] = [
       "A set of six shuriken-shaped fidget pieces designed to spin and play with. A compact desk object with a distinctly ninja-inspired design.",
     story: "Printed flat as one plate of six — thin enough to spin on the center bore, tough enough to survive a desk drop.",
     imageId: "retro-pixel-blaster",
-    colorOptions: [
-      { key: "black", label: "Black", imageId: "retro-pixel-blaster" },
-      { key: "red", label: "Red", imageId: "retro-pixel-blaster-red" },
-      { key: "white", label: "White", imageId: "retro-pixel-blaster-white" },
-    ],
     availability: "available",
     creator: "Pixel Foundry",
-  },
-  {
-    slug: "pen-holder-figure",
-    name: "Darth Vader Pen Holder",
-    category: "Object",
-    weightInGrams: 72.1,
-    printProfile: "0.2mm layer, 2 walls, 15% infill",
-    materialType: "PLA",
-    material: "PLA",
-    finish: "Matte black",
-    dimensionsMm: { width: 90, depth: 60, height: 130 },
-    dimensionsApprox: true,
-    description:
-      "A Darth Vader-inspired desktop holder designed to keep small everyday items organized. Use it for pens, remotes, or other similarly sized objects.",
-    story: "One part display piece, one part daily tool — designed to earn its place on a desk.",
-    imageId: "modular-desk-organizer",
-    colorOptions: [
-      { key: "black", label: "Black", imageId: "modular-desk-organizer" },
-      { key: "red", label: "Red", imageId: "modular-desk-organizer-red" },
-      { key: "white", label: "White", imageId: "modular-desk-organizer-white" },
-    ],
-    availability: "available",
-    creator: "FORMA Studio",
   },
   {
     slug: "corset-vase",
@@ -300,12 +227,6 @@ export const PRODUCTS: Product[] = [
       "A gothic corset-inspired organizer designed to hold makeup brushes and other small accessories. Its sculptural form makes the organizer part of the display rather than something to hide away.",
     story: "Printed as a single continuous shell — no seams, no glue joints, no visible layer lines on the laced panels.",
     imageId: "corset-vase",
-    colorOptions: [
-      { key: "black", label: "Black", imageId: "corset-vase", galleryImageIds: ["corset-vase-detail"] },
-      { key: "blue", label: "Blue", imageId: "corset-vase-blue", galleryImageIds: ["corset-vase-blue-detail"] },
-      { key: "red", label: "Red", imageId: "corset-vase-red" },
-      { key: "white", label: "White", imageId: "corset-vase-white" },
-    ],
     availability: "available",
     creator: "Studio Quiet",
   },
@@ -323,11 +244,6 @@ export const PRODUCTS: Product[] = [
       "A rune-inspired coaster designed to sit beneath your coffee, drinks, or everyday desk essentials. Its carved-looking surface gives it a small artifact-like feel.",
     story: "Sold individually — pair two or more to complete a set.",
     imageId: "gravity-dice-tower",
-    colorOptions: [
-      { key: "black", label: "Black", imageId: "gravity-dice-tower" },
-      { key: "red", label: "Red", imageId: "gravity-dice-tower-red" },
-      { key: "white", label: "White", imageId: "gravity-dice-tower-white" },
-    ],
     availability: "available",
     creator: "FORMA Studio",
   },
@@ -345,11 +261,6 @@ export const PRODUCTS: Product[] = [
       "A tentacle-inspired jewellery stand that coils upward to hold rings along its suckers and necklaces draped from its curling arm. Its sculptural shape makes it work as both a functional stand and a desk piece.",
     story: "The tentacle base carries the same sculpting language across the collection — printed tall and slow to keep every claw and sucker crisp.",
     imageId: "jewellery-stand",
-    colorOptions: [
-      { key: "black", label: "Black", imageId: "jewellery-stand" },
-      { key: "red", label: "Red", imageId: "jewellery-stand-red" },
-      { key: "white", label: "White", imageId: "jewellery-stand-white" },
-    ],
     availability: "available",
     creator: "Lumen Forge",
   },
@@ -366,11 +277,6 @@ export const PRODUCTS: Product[] = [
     description: "A brush cup and tiered tray in one piece, wrapped in a carved tentacle relief.",
     story: "Weight is an estimate, not yet a verified Bambu print log entry — the price above may adjust once a finished print is actually weighed. Dimensions shown are an estimate too.",
     imageId: "makeup-organizer",
-    colorOptions: [
-      { key: "black", label: "Black", imageId: "makeup-organizer" },
-      { key: "red", label: "Red", imageId: "makeup-organizer-red" },
-      { key: "white", label: "White", imageId: "makeup-organizer-white" },
-    ],
     availability: "available",
     creator: "Lumen Forge",
   },
@@ -387,11 +293,6 @@ export const PRODUCTS: Product[] = [
     description: "A faceted crystal cluster that doubles as a phone dock.",
     story: "Weight is an estimate, not yet a verified Bambu print log entry — the price above may adjust once a finished print is actually weighed. Dimensions shown are an estimate too.",
     imageId: "crystal-phone-stand",
-    colorOptions: [
-      { key: "black", label: "Black", imageId: "crystal-phone-stand" },
-      { key: "red", label: "Red", imageId: "crystal-phone-stand-red" },
-      { key: "white", label: "White", imageId: "crystal-phone-stand-white" },
-    ],
     availability: "available",
     creator: "Vantage Collective",
   },
@@ -409,11 +310,6 @@ export const PRODUCTS: Product[] = [
       "A round ashtray with a carved medallion base and a ring of coiled tentacle relief along its rim. Sized for everyday use on a desk or table.",
     story: "A single-piece print with no assembly — the raised rim keeps ash contained while the tentacle relief stays purely decorative.",
     imageId: "ashtray",
-    colorOptions: [
-      { key: "black", label: "Black", imageId: "ashtray" },
-      { key: "red", label: "Red", imageId: "ashtray-red" },
-      { key: "white", label: "White", imageId: "ashtray-white" },
-    ],
     availability: "available",
     creator: "FORMA Studio",
   },
@@ -430,11 +326,6 @@ export const PRODUCTS: Product[] = [
     description: "A blocky, pixel-art desk figure with a simple two-eyed face — inspired by Claude.",
     story: "A small, single-color print — no supports, no multi-part assembly, just a blocky desk companion.",
     imageId: "claude-figurine-clean",
-    colorOptions: [
-      { key: "custom", label: "Orange", imageId: "claude-figurine-clean", hex: "#e8791a" },
-      { key: "red", label: "Red", imageId: "claude-figurine-clean-red" },
-      { key: "white", label: "White", imageId: "claude-figurine-clean-white" },
-    ],
     availability: "available",
     creator: "Pixel Foundry",
   },
@@ -452,11 +343,6 @@ export const PRODUCTS: Product[] = [
       "A set of custom keycaps for a mechanical keyboard, each stamped with a raised emblem. A small way to add a bit of character to an otherwise ordinary keyboard.",
     story: "Sold as a pair — the same mould run twice, so you always have a matched spare.",
     imageId: "spider-emblem-coaster",
-    colorOptions: [
-      { key: "black", label: "Black", imageId: "spider-emblem-coaster" },
-      { key: "red", label: "Red", imageId: "spider-emblem-coaster-red" },
-      { key: "white", label: "White", imageId: "spider-emblem-coaster-white" },
-    ],
     availability: "available",
     creator: "Studio Ronin",
   },
@@ -475,11 +361,6 @@ export const PRODUCTS: Product[] = [
     story: "Each leg is printed as a single interlocking joint — no pins, no glue — so the whole stand articulates under a light touch.",
     imageId: "hexapod-mug-stand",
     galleryImageIds: ["hexapod-mug-stand-detail"],
-    colorOptions: [
-      { key: "black", label: "Black", imageId: "hexapod-mug-stand" },
-      { key: "red", label: "Red", imageId: "hexapod-mug-stand-red" },
-      { key: "white", label: "White", imageId: "hexapod-mug-stand-white" },
-    ],
     demoVideoId: "hexapod-mug-stand-demo",
     availability: "available",
     creator: "Vantage Collective",
@@ -497,11 +378,6 @@ export const PRODUCTS: Product[] = [
     story: "Weight is an estimate, not yet a verified Bambu print log entry — the price above may adjust once a finished print is actually weighed. Printed in vase mode: a single unbroken wall from base to rim, with no seam.",
     imageId: "twist-vase",
     galleryImageIds: ["twist-vase-detail"],
-    colorOptions: [
-      { key: "custom", label: "Teal-green", imageId: "twist-vase", hex: "#2f8f7a" },
-      { key: "red", label: "Red", imageId: "twist-vase-red" },
-      { key: "white", label: "White", imageId: "twist-vase-white" },
-    ],
     demoVideoId: "twist-vase-demo",
     availability: "available",
     creator: "FORMA Studio",
