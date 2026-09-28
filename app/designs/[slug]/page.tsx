@@ -108,7 +108,7 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
               </p>
               <div className="mt-2 flex gap-2">
                 {product.colorOptions.map((c) => {
-                  const hex = COLORS.find((x) => x.key === c.key)?.hex ?? "#999999";
+                  const hex = c.hex ?? COLORS.find((x) => x.key === c.key)?.hex ?? "#999999";
                   const active = c.key === selectedColor;
                   return (
                     <button

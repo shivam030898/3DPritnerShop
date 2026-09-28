@@ -54,7 +54,7 @@ export default function SaveButton({
       aria-label={saved ? "Remove from saved" : "Save design"}
       aria-pressed={saved}
       className={cn(
-        "flex cursor-pointer items-center justify-center rounded-full bg-surface/90 text-text shadow-card backdrop-blur transition-transform hover:scale-105",
+        "flex cursor-pointer items-center justify-center rounded-full bg-surface/90 text-text shadow-card outline-none backdrop-blur transition-colors duration-200 hover:bg-surface focus-visible:ring-2 focus-visible:ring-text/25",
         box
       )}
     >

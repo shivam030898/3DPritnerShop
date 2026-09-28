@@ -4,56 +4,9 @@ import { useLayoutEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { PRODUCTS, productMedia } from "@/lib/constants";
+import { PRODUCTS } from "@/lib/constants";
 import { gsap, ScrollTrigger } from "@/lib/gsap";
-import Button from "@/components/ui/Button";
-
-/**
- * A small still-life of real pieces from the catalog, not a single
- * full-bleed product photo — the point is to read as "a collection," not
- * "a close-up of one random object." Each entry's `imageId` must have a
- * background-removed cutout (see `productMedia`/`THUMB_IMAGE_IDS` in
- * lib/constants.ts) so it sits directly on the section's theme surface
- * with no baked-in backdrop of its own.
- *
- * Position/width are percentages of the cluster container (itself the
- * right ~55% of the section), so the composition scales together rather
- * than each piece drifting independently at different viewport widths.
- */
-const PIECES = [
-  {
-    slug: "corset-vase",
-    imageId: "corset-vase",
-    intrinsicW: 777,
-    intrinsicH: 1111,
-    style: { top: "4%", right: "6%", width: "32%" },
-    rotate: -2,
-  },
-  {
-    slug: "hexapod-mug-stand",
-    imageId: "hexapod-mug-stand",
-    intrinsicW: 1590,
-    intrinsicH: 1219,
-    style: { top: "52%", right: "32%", width: "36%" },
-    rotate: 3,
-  },
-  {
-    slug: "twist-vase",
-    imageId: "twist-vase",
-    intrinsicW: 916,
-    intrinsicH: 1543,
-    style: { top: "6%", right: "40%", width: "15%" },
-    rotate: 2,
-  },
-  {
-    slug: "kunai",
-    imageId: "cyber-samurai",
-    intrinsicW: 521,
-    intrinsicH: 1213,
-    style: { top: "56%", right: "2%", width: "13%" },
-    rotate: -4,
-  },
-] as const;
+import Button, { ButtonArrow } from "@/components/ui/Button";
 
 export default function FinalCta() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -99,7 +52,9 @@ export default function FinalCta() {
           <div className="cta-reveal mt-8">
             <Button as="link" href="/designs" size="lg">
               Explore the collection
-              <ArrowRight size={14} />
+              <ButtonArrow>
+                <ArrowRight size={14} />
+              </ButtonArrow>
             </Button>
           </div>
           <p className="cta-reveal mt-10 text-mono-label text-[10px] text-text-faint">
@@ -107,23 +62,17 @@ export default function FinalCta() {
           </p>
         </div>
 
-        <div className="relative order-first h-[280px] sm:h-[360px] lg:order-none lg:h-[440px]">
-          {PIECES.map((piece) => (
-            <div
-              key={piece.slug}
-              className="cta-piece absolute drop-shadow-[0_24px_32px_rgba(20,20,20,0.18)]"
-              style={{ ...piece.style, rotate: `${piece.rotate}deg` }}
-            >
-              <Image
-                src={productMedia(piece.imageId)}
-                alt=""
-                width={piece.intrinsicW}
-                height={piece.intrinsicH}
-                sizes="(max-width: 1024px) 40vw, 24vw"
-                className="h-auto w-full"
-              />
-            </div>
-          ))}
+        <div className="cta-piece order-first h-[280px] overflow-hidden rounded-2xl bg-white p-8 shadow-[0_1px_2px_rgba(20,20,20,0.04)] sm:h-[360px] sm:p-10 lg:order-none lg:h-[440px]">
+          <div className="relative h-full w-full">
+            <Image
+              src="/media/a1-mini.webp"
+              alt="The Bambu Lab A1 mini printer FORMA prints every piece on"
+              fill
+              sizes="(max-width: 1024px) 90vw, 44vw"
+              className="object-contain"
+              priority
+            />
+          </div>
         </div>
       </div>
     </section>

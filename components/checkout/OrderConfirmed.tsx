@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import { CheckCircle2, ArrowRight } from "lucide-react";
 import { formatINR } from "@/lib/utils";
-import Button from "@/components/ui/Button";
+import Button, { ButtonArrow } from "@/components/ui/Button";
 
 export default function OrderConfirmed({
   orderNumbers,
@@ -44,7 +44,9 @@ export default function OrderConfirmed({
 
       <Button as="link" href={multiple ? "/account/orders" : `/orders/${primary}`} className="mt-8">
         {multiple ? "View orders" : "Track Order"}
-        <ArrowRight size={16} />
+        <ButtonArrow>
+          <ArrowRight size={16} />
+        </ButtonArrow>
       </Button>
     </motion.div>
   );

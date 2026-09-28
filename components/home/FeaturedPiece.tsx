@@ -7,7 +7,7 @@ import { ArrowRight } from "lucide-react";
 import { PRODUCTS, getProductPrice, productMedia } from "@/lib/constants";
 import { formatINR } from "@/lib/utils";
 import { gsap, ScrollTrigger } from "@/lib/gsap";
-import Button from "@/components/ui/Button";
+import Button, { ButtonArrow } from "@/components/ui/Button";
 
 const PRODUCT = PRODUCTS.find((p) => p.slug === "kunai")!;
 
@@ -36,14 +36,20 @@ export default function FeaturedPiece() {
   return (
     <section ref={sectionRef} className="border-y border-border bg-surface px-5 py-20 md:py-28">
       <div className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-10 lg:grid-cols-2 lg:gap-20">
-        <div className="fp-reveal relative aspect-[4/5] overflow-hidden bg-white p-10 md:p-14 lg:order-2">
-          <Image
-            src={productMedia(PRODUCT.imageId)}
-            alt={PRODUCT.name}
-            fill
-            sizes="(max-width: 1024px) 100vw, 50vw"
-            className="object-contain"
-          />
+        <div className="fp-reveal relative aspect-[4/5] overflow-hidden rounded-2xl bg-white p-12 md:p-16 lg:order-2">
+          {/* See ProductCard.tsx: a `fill` image can't be a direct child of
+              its own padded parent — position:absolute; inset:0 fills the
+              padding box, ignoring that padding entirely. This wrapper is
+              percentage-sized instead, so it actually respects it. */}
+          <div className="relative h-full w-full">
+            <Image
+              src={productMedia(PRODUCT.imageId)}
+              alt={PRODUCT.name}
+              fill
+              sizes="(max-width: 1024px) 100vw, 50vw"
+              className="object-contain"
+            />
+          </div>
         </div>
 
         <div className="lg:order-1">
@@ -58,7 +64,9 @@ export default function FeaturedPiece() {
           <div className="fp-reveal mt-7">
             <Button as="link" href={`/designs/${PRODUCT.slug}`} size="lg">
               View piece
-              <ArrowRight size={14} />
+              <ButtonArrow>
+                <ArrowRight size={14} />
+              </ButtonArrow>
             </Button>
           </div>
         </div>

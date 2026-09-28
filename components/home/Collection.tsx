@@ -42,10 +42,13 @@ export default function Collection() {
           </div>
           <Link
             href="/designs"
-            className="flex items-center gap-1.5 text-sm text-text-dim transition-colors hover:text-text"
+            className="group flex items-center gap-1.5 text-sm text-text-dim transition-colors hover:text-text"
           >
             View all
-            <ArrowRight size={14} />
+            <ArrowRight
+              size={14}
+              className="transition-transform duration-[250ms] ease-[var(--ease-standard)] group-hover:translate-x-1 motion-reduce:transition-none motion-reduce:group-hover:translate-x-0"
+            />
           </Link>
         </div>
 

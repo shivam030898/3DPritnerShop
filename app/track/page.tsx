@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 import Input from "@/components/ui/Input";
-import Button from "@/components/ui/Button";
+import Button, { ButtonArrow } from "@/components/ui/Button";
 
 export default function TrackPage() {
   const router = useRouter();
@@ -32,7 +32,9 @@ export default function TrackPage() {
         />
         <Button type="submit" className="w-full justify-center">
           Track Order
-          <ArrowRight size={16} />
+          <ButtonArrow>
+            <ArrowRight size={16} />
+          </ButtonArrow>
         </Button>
       </form>
 

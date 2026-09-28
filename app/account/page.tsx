@@ -49,9 +49,13 @@ export default async function AccountPage() {
         <h2 className="text-sm font-medium text-text">Recent orders</h2>
         <Link
           href="/account/orders"
-          className="flex items-center gap-1 text-sm text-text-dim hover:text-text"
+          className="group flex items-center gap-1 text-sm text-text-dim transition-colors hover:text-text"
         >
-          View all <ArrowRight size={14} />
+          View all{" "}
+          <ArrowRight
+            size={14}
+            className="transition-transform duration-[250ms] ease-[var(--ease-standard)] group-hover:translate-x-1 motion-reduce:transition-none motion-reduce:group-hover:translate-x-0"
+          />
         </Link>
       </div>
       <div className="mt-4 flex flex-col gap-3">

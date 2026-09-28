@@ -7,7 +7,7 @@ import { motion, useMotionValue, useSpring, useTransform, type MotionValue } fro
 import { ArrowRight, ShieldCheck } from "lucide-react";
 import { PRODUCTS, getProductPrice, productImage } from "@/lib/constants";
 import { formatINR, cn } from "@/lib/utils";
-import Button from "@/components/ui/Button";
+import Button, { ButtonArrow } from "@/components/ui/Button";
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 const PRICED_PRODUCTS = PRODUCTS.map(getProductPrice).filter((p): p is number => p !== null);
@@ -280,7 +280,9 @@ export default function Hero() {
           >
             <Button as="link" href="/designs" size="lg">
               View the collection
-              <ArrowRight size={14} />
+              <ButtonArrow>
+                <ArrowRight size={14} />
+              </ButtonArrow>
             </Button>
           </motion.div>
 

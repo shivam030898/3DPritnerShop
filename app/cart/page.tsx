@@ -6,7 +6,7 @@ import { ShoppingCart, ArrowRight, Loader2 } from "lucide-react";
 import { useCart } from "@/lib/useCart";
 import { formatINR } from "@/lib/utils";
 import CartLineCard from "@/components/cart/CartLineCard";
-import Button from "@/components/ui/Button";
+import Button, { ButtonArrow } from "@/components/ui/Button";
 
 export default function CartPage() {
   const router = useRouter();
@@ -76,7 +76,11 @@ export default function CartPage() {
               className="mt-5 w-full justify-center"
             >
               {loading ? <Loader2 size={16} className="animate-spin" /> : "Proceed to checkout"}
-              {!loading && <ArrowRight size={16} />}
+              {!loading && (
+                <ButtonArrow>
+                  <ArrowRight size={16} />
+                </ButtonArrow>
+              )}
             </Button>
             <Link
               href="/designs"

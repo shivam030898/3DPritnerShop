@@ -125,7 +125,7 @@ export default function ProductMediaGallery({
       )}
 
       <div
-        className="pd-image relative flex h-[440px] w-full min-w-0 items-center justify-center overflow-hidden rounded-md bg-white outline-none focus-visible:ring-2 focus-visible:ring-text/40 sm:h-[560px] lg:h-[680px]"
+        className="pd-image relative flex h-[440px] w-full min-w-0 items-center justify-center overflow-hidden rounded-md bg-white p-10 outline-none focus-visible:ring-2 focus-visible:ring-text/40 sm:h-[560px] sm:p-14 lg:h-[680px] lg:p-16"
         role="group"
         aria-roledescription="carousel"
         aria-label={`${productName} media`}
@@ -136,16 +136,24 @@ export default function ProductMediaGallery({
           if (e.key === "ArrowRight") next();
         }}
       >
-        <AnimatePresence initial={false}>
-          <motion.div
-            key={active.src}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.35, ease: "easeInOut" }}
-            className="absolute inset-0"
-          >
-            {active.type === "image" ? (
+        {/* `pd-image`'s padding above only works if the crossfade layer
+            below isn't ITSELF `position: absolute` directly inside it —
+            absolute + inset:0 fills the padding box, ignoring padding on
+            its own parent entirely. This wrapper is percentage-sized
+            instead (respects the padding via normal box-model math), and
+            padding-free itself, so the absolute crossfade layer inside it
+            fills exactly the already-reduced area. */}
+        <div className="relative h-full w-full">
+          <AnimatePresence initial={false}>
+            <motion.div
+              key={active.src}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.35, ease: "easeInOut" }}
+              className="absolute inset-0"
+            >
+              {active.type === "image" ? (
               <div
                 className={cn("relative h-full w-full", hoverCapable ? "cursor-zoom-in" : "cursor-pointer")}
                 onMouseMove={hoverCapable ? handleZoomMove : undefined}
@@ -200,7 +208,8 @@ export default function ProductMediaGallery({
               </video>
             )}
           </motion.div>
-        </AnimatePresence>
+          </AnimatePresence>
+        </div>
 
         {limited && active.type === "image" && (
           <p className="text-mono-label pointer-events-none absolute left-4 top-4 z-10 rounded-full bg-black/40 px-2.5 py-1 text-[11px] text-white backdrop-blur-sm">

@@ -16,7 +16,7 @@ export default function OrderCard({ order }: { order: Order }) {
   return (
     <Link
       href={`/orders/${order.orderNumber}`}
-      className="flex items-center justify-between gap-4 rounded-xl border border-border bg-surface p-5 transition-colors hover:border-text-faint"
+      className="group flex items-center justify-between gap-4 rounded-xl border border-border bg-surface p-5 transition-colors hover:border-text-faint"
     >
       <div className="flex min-w-0 items-center gap-4">
         <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-surface-2">
@@ -43,7 +43,10 @@ export default function OrderCard({ order }: { order: Order }) {
       </div>
       <div className="flex shrink-0 items-center gap-3">
         <span className="text-sm font-medium text-text">{formatINR(order.total)}</span>
-        <ArrowRight size={16} className="text-text-faint" />
+        <ArrowRight
+          size={16}
+          className="text-text-faint transition-transform duration-[250ms] ease-[var(--ease-standard)] group-hover:translate-x-1 motion-reduce:transition-none motion-reduce:group-hover:translate-x-0"
+        />
       </div>
     </Link>
   );
