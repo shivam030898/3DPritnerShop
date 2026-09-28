@@ -40,8 +40,8 @@ export default function Footer() {
                 {s.label}
               </a>
             ))}
-            <Link href="/support" className="hover:text-text">Privacy</Link>
-            <Link href="/support" className="hover:text-text">Terms</Link>
+            <Link href="/privacy" className="hover:text-text">Privacy</Link>
+            <Link href="/terms" className="hover:text-text">Terms</Link>
           </div>
         </div>
       </div>
