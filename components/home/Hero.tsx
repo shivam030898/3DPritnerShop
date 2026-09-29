@@ -1,184 +1,82 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
-import Link from "next/link";
-import { motion, useMotionValue, useSpring, useTransform, type MotionValue } from "framer-motion";
+import { useCallback, useMemo, useRef, useState, type CSSProperties } from "react";
+import dynamic from "next/dynamic";
+import { motion } from "framer-motion";
 import { ArrowRight, ShieldCheck } from "lucide-react";
 import { PRODUCTS, getProductPrice, productImage } from "@/lib/constants";
 import { formatINR, cn } from "@/lib/utils";
 import Button, { ButtonArrow } from "@/components/ui/Button";
+import Link from "next/link";
+
+// The orbit's visuals are genuine WebGL 3D spheres (real geometry + physical
+// material + lighting, not a flat image in a circle) — that needs a browser
+// canvas, so this chunk only ever loads client-side.
+const OrbitSpheres = dynamic(() => import("./OrbitSpheres"), { ssr: false });
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 const PRICED_PRODUCTS = PRODUCTS.map(getProductPrice).filter((p): p is number => p !== null);
 const FROM_PRICE = PRICED_PRODUCTS.length > 0 ? Math.min(...PRICED_PRODUCTS) : null;
 
-// Bubbles rise in staggered, one after another — this is the per-bubble
-// delay step, and stays inside the 0.12–0.25s range that reads as an
-// intentional cascade rather than a synchronized pop or a sluggish crawl.
-const ENTRANCE_STAGGER = 0.16;
+type Layer = "front" | "middle" | "back";
 
-/** True once we know the visitor's OS-level reduced-motion preference —
- *  starts false (matches SSR) and updates after mount, so the continuous
- *  idle drift never runs for anyone who has asked for less motion. */
-function usePrefersReducedMotion() {
-  const [reduced, setReduced] = useState(
-    () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches
-  );
-
-  useEffect(() => {
-    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const onChange = (e: MediaQueryListEvent) => setReduced(e.matches);
-    query.addEventListener("change", onChange);
-    return () => query.removeEventListener("change", onChange);
-  }, []);
-
-  return reduced;
-}
-
-// Every floating circle is exactly this size at a given breakpoint — one
-// shared value, not a per-item one, so the set reads as a single consistent
-// system rather than a mix of small/medium/large bubbles.
-const CIRCLE_SIZE = "w-24 sm:w-32 lg:w-40";
-
-type Layer = "back" | "middle" | "front";
-
-type ModelSpec = {
+type OrbitSpec = {
   slug: string;
   layer: Layer;
-  position: string;
-  rotate: number;
-  /** One full idle drift cycle, in seconds — kept well outside the entrance
-   *  animation's duration so the two never visually overlap in speed. */
-  floatDuration: number;
-  /** Extra phase offset added after this bubble's entrance finishes, so
-   *  idle drift starts at a slightly different moment for every bubble. */
-  floatDelay: number;
-  /** Idle drift amplitude, in px/deg — tiny, physical-object-sized motion.
-   *  Signs vary per bubble so neighbors drift in different directions. */
-  floatX: number;
-  floatY: number;
-  floatRotate: number;
+  /** Degrees clockwise from 12 o'clock, at each tier the bubble is visible
+   *  in. The orbit ring itself keeps spinning on top of this — this is
+   *  just this bubble's fixed seat on the ring. Tiers re-balance the
+   *  angles of the visible subset so it always reads as one even circle
+   *  (2 bubbles → 180° apart, 4 → 90° apart, 6 → 60° apart) instead of a
+   *  leftover arc from the desktop layout. */
+  angle: { base: number; sm?: number; lg?: number };
 };
 
-// Layer controls visibility per breakpoint (front: always, middle: sm+, back: lg+),
-// parallax reach and drop-shadow strength — see LAYER_STYLE below. Size and
-// opacity are intentionally NOT layer-dependent anymore — every circle is
-// the same size, fully opaque, so depth reads only through shadow/parallax.
-const MODELS: ModelSpec[] = [
-  {
-    slug: "kunai",
-    layer: "front",
-    position: "left-[2%] top-[16%] sm:left-[5%]",
-    rotate: -6,
-    floatDuration: 6.2,
-    floatDelay: 0,
-    floatX: 10,
-    floatY: -12,
-    floatRotate: 3,
-  },
-  {
-    slug: "hexapod-mug-stand",
-    layer: "front",
-    position: "right-[2%] bottom-[6%] sm:right-[5%]",
-    rotate: 5,
-    floatDuration: 7.4,
-    floatDelay: 0.6,
-    floatX: -13,
-    floatY: 9,
-    floatRotate: -2.5,
-  },
-  {
-    slug: "tentacle",
-    layer: "middle",
-    position: "right-[6%] top-[14%] sm:right-[10%]",
-    rotate: 4,
-    floatDuration: 5.4,
-    floatDelay: 0.3,
-    floatX: 8,
-    floatY: 11,
-    floatRotate: 2,
-  },
-  {
-    slug: "shuriken-four-point",
-    layer: "middle",
-    position: "left-[0%] top-1/2 -translate-y-1/2 sm:left-[1%]",
-    rotate: -3,
-    floatDuration: 5.8,
-    floatDelay: 1.2,
-    floatX: 14,
-    floatY: 8,
-    floatRotate: 2.8,
-  },
-  {
-    slug: "celtic-coaster",
-    layer: "back",
-    position: "right-[0%] top-1/2 -translate-y-1/2 sm:right-[2%]",
-    rotate: 3,
-    floatDuration: 6.7,
-    floatDelay: 0.4,
-    floatX: -9,
-    floatY: 13,
-    floatRotate: -3,
-  },
-  {
-    slug: "corset-vase",
-    layer: "back",
-    position: "left-[22%] top-[16%]",
-    rotate: -2,
-    floatDuration: 8.6,
-    floatDelay: 0.8,
-    floatX: 12,
-    floatY: -10,
-    floatRotate: 3.4,
-  },
+// front = always visible (mobile+), middle = sm and up, back = lg and up —
+// this is the "reduce bubble count on small screens" lever from the design
+// brief. Top (0°) and bottom (180°) stay anchored across every tier so the
+// composition doesn't visibly reshuffle at the breakpoint edges.
+const ORBIT: OrbitSpec[] = [
+  { slug: "kunai", layer: "front", angle: { base: 0 } },
+  { slug: "hexapod-mug-stand", layer: "front", angle: { base: 180 } },
+  { slug: "tentacle", layer: "middle", angle: { base: 90, lg: 60 } },
+  { slug: "shuriken-four-point", layer: "middle", angle: { base: 270, lg: 300 } },
+  { slug: "celtic-coaster", layer: "back", angle: { base: 240 } },
+  { slug: "corset-vase", layer: "back", angle: { base: 120 } },
 ];
 
-const LAYER_STYLE: Record<
-  Layer,
-  { visibility: string; shadow: string; z: string; parallax: number }
-> = {
-  back: {
-    visibility: "hidden lg:block",
-    shadow: "drop-shadow-[0_14px_18px_rgba(0,0,0,0.12)]",
-    z: "z-0",
-    parallax: 3,
-  },
-  middle: {
-    visibility: "hidden sm:block",
-    shadow: "drop-shadow-[0_18px_22px_rgba(0,0,0,0.14)]",
-    z: "z-10",
-    parallax: 5,
-  },
-  front: {
-    visibility: "block",
-    shadow: "drop-shadow-[0_24px_28px_rgba(0,0,0,0.18)]",
-    z: "z-20",
-    parallax: 9,
-  },
+// Every bubble is the same size at every tier — depth now reads through the
+// marble spheres' own lighting/shadow (see OrbitSpheres), not per-layer CSS
+// shadow strength — and this is what the measured orbit-radius safety
+// margins (see globals.css) are tuned against.
+const BUBBLE_SIZE = "w-16";
+
+const LAYER_VISIBILITY: Record<Layer, string> = {
+  front: "block",
+  middle: "hidden sm:block",
+  back: "hidden lg:block",
 };
 
 export default function Hero() {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const mvX = useMotionValue(0);
-  const mvY = useMotionValue(0);
-  const springX = useSpring(mvX, { stiffness: 90, damping: 20, mass: 0.5 });
-  const springY = useSpring(mvY, { stiffness: 90, damping: 20, mass: 0.5 });
+  // Mutable, not state: the 3D layer reads these refs itself inside its own
+  // render loop (see OrbitSpheres' useFrame) rather than through React, so
+  // updating them here must never trigger a re-render.
+  const bubbleEls = useRef<Record<string, HTMLAnchorElement | null>>({});
+  const getBubbleEl = useCallback((slug: string) => bubbleEls.current[slug] ?? null, []);
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = containerRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    mvX.set(((e.clientX - rect.left) / rect.width) * 2 - 1);
-    mvY.set(((e.clientY - rect.top) / rect.height) * 2 - 1);
-  };
+  const [hoveredSlug, setHoveredSlug] = useState<string | null>(null);
 
-  const handleMouseLeave = () => {
-    mvX.set(0);
-    mvY.set(0);
-  };
+  const sphereItems = useMemo(
+    () =>
+      ORBIT.map((spec) => ({
+        slug: spec.slug,
+        imageUrl: productImage(PRODUCTS.find((p) => p.slug === spec.slug)!.imageId),
+      })),
+    []
+  );
 
   return (
-    <section className="relative -mt-16 min-h-screen min-h-svh min-h-dvh overflow-hidden px-5 py-14 md:px-8 lg:py-0">
+    <section className="relative -mt-16 flex min-h-screen min-h-svh min-h-dvh items-center overflow-hidden px-5 py-14 md:px-8 lg:py-0">
       <video
         aria-hidden
         autoPlay
@@ -221,15 +119,34 @@ export default function Hero() {
         }}
       />
 
-      <div
-        ref={containerRef}
-        onMouseMove={handleMouseMove}
-        onMouseLeave={handleMouseLeave}
-        className="relative z-10 mx-auto flex min-h-[520px] max-w-[1400px] items-center justify-center py-8 lg:min-h-[92vh] lg:py-12"
-      >
-        {MODELS.map((m, i) => (
-          <HeroModel key={m.slug} spec={m} index={i} springX={springX} springY={springY} />
-        ))}
+      <div className="relative z-10 mx-auto flex w-full min-h-[520px] max-w-[1400px] items-center justify-center py-8 lg:min-h-[92vh] lg:py-12">
+        {/* The marble spheres render into this sibling canvas, NOT as a
+            child of .hero-orbit below — .hero-orbit is the element that
+            physically spins (see globals.css), and nesting the canvas
+            inside it would spin the canvas's own DOM box along with it,
+            corrupting the very rect this canvas reads every frame to place
+            each sphere. Both stay anchored to this same centered box, so
+            their coordinate spaces still line up perfectly. */}
+        <OrbitSpheres items={sphereItems} getEl={getBubbleEl} hoveredSlug={hoveredSlug} />
+
+        {/* Orbit ring — centered on this same box, so its center always
+            matches the center of the text column below. Past a wide-and-tall
+            enough viewport (see .hero-orbit in globals.css) the ring spins
+            continuously; each item counter-spins by the same amount so the
+            bubble stays upright while only its position travels around the
+            circle. Below that it holds a static circular arrangement. */}
+        <div className="hero-orbit pointer-events-none absolute inset-0 z-20">
+          {ORBIT.map((spec) => (
+            <OrbitBubble
+              key={spec.slug}
+              spec={spec}
+              registerEl={(el) => {
+                bubbleEls.current[spec.slug] = el;
+              }}
+              onHoverChange={(hovered) => setHoveredSlug(hovered ? spec.slug : null)}
+            />
+          ))}
+        </div>
 
         <div className="relative z-30 mx-auto flex w-full max-w-[420px] flex-col items-center px-2 text-center">
           <motion.p
@@ -265,7 +182,7 @@ export default function Hero() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.95, ease: EASE }}
-            className="mt-7"
+            className="relative z-40 mt-7"
           >
             <Button as="link" href="/designs" size="lg">
               View the collection
@@ -300,118 +217,58 @@ export default function Hero() {
   );
 }
 
-function HeroModel({
+function OrbitBubble({
   spec,
-  index,
-  springX,
-  springY,
+  registerEl,
+  onHoverChange,
 }: {
-  spec: ModelSpec;
-  index: number;
-  springX: MotionValue<number>;
-  springY: MotionValue<number>;
+  spec: OrbitSpec;
+  registerEl: (el: HTMLAnchorElement | null) => void;
+  onHoverChange: (hovered: boolean) => void;
 }) {
   const product = PRODUCTS.find((p) => p.slug === spec.slug)!;
   const bubblePrice = getProductPrice(product);
-  const style = LAYER_STYLE[spec.layer];
-  const reach = style.parallax;
-  const x = useTransform(springX, [-1, 1], [-reach, reach]);
-  const y = useTransform(springY, [-1, 1], [-reach, reach]);
-  const reduceMotion = usePrefersReducedMotion();
+  const visibility = LAYER_VISIBILITY[spec.layer];
 
-  // Entrance: this bubble's resting position (spec.position) is the anchor —
-  // it rises into place from below, like a bubble floating up from
-  // underwater, then hands off to the idle drift loop below.
-  const entranceDuration = 1.3 + (index % 3) * 0.2; // 1.2–1.8s
-  const entranceDelay = index * ENTRANCE_STAGGER;
-  const entranceStartY = 120 + (index % 3) * 25; // 100–180px below rest
-  const entranceStartScale = index % 2 === 0 ? 0.86 : 0.89; // 0.85–0.9
+  const angleVars = {
+    "--angle-base": `${spec.angle.base}deg`,
+    "--angle-sm": `${spec.angle.sm ?? spec.angle.base}deg`,
+    "--angle-lg": `${spec.angle.lg ?? spec.angle.sm ?? spec.angle.base}deg`,
+  } as CSSProperties;
 
-  // Idle drift only starts once this bubble has fully settled, so the two
-  // animations never run at the same time.
-  const idleStartDelay = entranceDelay + entranceDuration + spec.floatDelay;
-
+  // No entrance animation here anymore — OrbitSpheres animates the marble
+  // itself in from off-canvas-left along a curved path (see FRESH_ENTRANCE
+  // there). This element only ever needs to sit at its final orbit seat: it's
+  // an invisible hit target (for click/hover/focus/keyboard), not a visual,
+  // so it never needs to visually travel anywhere itself.
   return (
-    <motion.div
-      style={{ x, y }}
-      className={cn("absolute", spec.position, CIRCLE_SIZE, style.visibility, style.z)}
-    >
-      {/* Entrance — rises from below into this bubble's anchor position, then never moves again. */}
-      <motion.div
-        initial={{ opacity: 0, y: entranceStartY, scale: entranceStartScale }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: entranceDuration, delay: entranceDelay, ease: EASE }}
-      >
-        {/* Idle drift — tiny, slow, out-of-phase per bubble; disabled for prefers-reduced-motion. */}
-        <motion.div
-          animate={
-            reduceMotion
-              ? undefined
-              : {
-                  x: [0, spec.floatX, 0, -spec.floatX * 0.6, 0],
-                  y: [0, spec.floatY, 0, -spec.floatY * 0.6, 0],
-                  rotate: [0, spec.floatRotate, 0, -spec.floatRotate * 0.6, 0],
-                }
-          }
-          transition={{
-            duration: spec.floatDuration,
-            delay: idleStartDelay,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
+    <div className={cn("hero-orbit-item pointer-events-none", visibility)} style={angleVars}>
+      <div className="hero-orbit-upright">
+        {/* Invisible hit target — sized and positioned exactly where the
+            marble sphere is drawn, so the sphere stays clickable, focusable
+            and announces as a link, while the actual visual comes from the
+            shared WebGL canvas underneath. */}
+        <Link
+          ref={registerEl}
+          href={`/designs/${product.slug}`}
+          aria-label={`${product.name}${bubblePrice !== null ? ` · ${formatINR(bubblePrice)}` : ""}`}
+          className={cn(
+            "hero-orbit-bubble group relative block aspect-square cursor-pointer rounded-full pointer-events-auto",
+            BUBBLE_SIZE
+          )}
+          onPointerEnter={() => onHoverChange(true)}
+          onPointerLeave={() => onHoverChange(false)}
+          onFocus={() => onHoverChange(true)}
+          onBlur={() => onHoverChange(false)}
         >
-          <motion.div
-            style={{ rotate: spec.rotate }}
-            className={cn("group relative cursor-pointer", style.shadow)}
-          >
-            <Link href={`/designs/${product.slug}`} className="block">
-              {/* Only this circle scales on hover — the wrapper above (rotation,
-                  drop-shadow, group-hover trigger for the caption) stays put, so
-                  nothing around the image jumps or shifts. */}
-              <motion.div
-                whileHover={{ scale: 1.1 }}
-                transition={{ duration: 0.25, ease: EASE }}
-                className="relative aspect-square overflow-hidden rounded-full bg-surface-2 ring-1 ring-inset ring-white/50"
-                style={{
-                  boxShadow:
-                    "inset 0 1px 2px rgba(255,255,255,0.7), inset 0 -10px 16px rgba(0,0,0,0.18), 0 8px 20px rgba(0,0,0,0.12)",
-                }}
-              >
-                <Image
-                  src={productImage(product.imageId)}
-                  alt={product.name}
-                  width={300}
-                  height={300}
-                  className="h-full w-full object-cover transition-[filter] duration-200 ease-out group-hover:brightness-105"
-                />
-                {/* Liquid-glass sheen — a soft light-catching highlight arced
-                    across the top-left of the bubble, like light refracting
-                    through a glass sphere. Purely decorative (pointer-events
-                    none), sits above the product photo without touching it. */}
-                <div
-                  aria-hidden
-                  className="pointer-events-none absolute inset-0 rounded-full"
-                  style={{
-                    background:
-                      "linear-gradient(135deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.12) 30%, rgba(255,255,255,0) 55%)",
-                  }}
-                />
-                <div
-                  aria-hidden
-                  className="pointer-events-none absolute -left-1/4 -top-1/2 h-1/2 w-3/4 rounded-full opacity-70 blur-md"
-                  style={{ background: "radial-gradient(closest-side, rgba(255,255,255,0.8), rgba(255,255,255,0))" }}
-                />
-              </motion.div>
-              <div className="pointer-events-none absolute inset-x-0 -bottom-6 flex flex-col items-center opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-                <p className="max-w-full truncate rounded-full bg-text px-2.5 py-1 text-[10px] font-medium text-bg shadow-card">
-                  {product.name}
-                  {bubblePrice !== null && ` · ${formatINR(bubblePrice)}`}
-                </p>
-              </div>
-            </Link>
-          </motion.div>
-        </motion.div>
-      </motion.div>
-    </motion.div>
+          <div className="pointer-events-none absolute inset-x-0 -bottom-6 flex flex-col items-center opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-visible:opacity-100">
+            <p className="max-w-[120px] truncate rounded-full bg-text px-2.5 py-1 text-[10px] font-medium text-bg shadow-card">
+              {product.name}
+              {bubblePrice !== null && ` · ${formatINR(bubblePrice)}`}
+            </p>
+          </div>
+        </Link>
+      </div>
+    </div>
   );
 }

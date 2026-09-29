@@ -123,6 +123,129 @@ body {
   outline-offset: 2px;
 }
 
+/* Hero product-bubble orbit --------------------------------------------
+   A ring of bubbles arranged around the fixed hero content, itself now
+   vertically centered in the hero section (see the section's own `flex
+   items-center` in Hero.tsx) instead of sitting flush under the navbar —
+   that alone roughly doubles the clearance available above the text on
+   short/medium viewports. Each `.hero-orbit-item` seats itself on the
+   ring at `--angle` (0deg = 12 o'clock, clockwise) and `--orbit-radius`
+   out from center using the classic rotate+translate+counter-rotate
+   trick — no per-item top/left values, no JS trig — and that trailing
+   counter-rotate keeps it upright regardless of its own seat angle.
+
+   Continuous revolution (`.hero-orbit` spinning, `.hero-orbit-upright`
+   counter-spinning by the same amount so it never reaches the product
+   photo) is gated on WIDTH only now, not height. It used to also require
+   a height floor (~750px) so a full 360° sweep's radius could clear the
+   text block's corner distance (~213px) without ever geometrically
+   touching it — but that was stricter than the actual requirement. The
+   navbar is `fixed z-40` (Navbar.tsx), the hero text is `z-30`, the CTA
+   is `z-40`, and this orbit is `z-20`: all three already render ON TOP of
+   the orbit regardless of geometric overlap, so a bubble passing behind
+   the text or under the navbar at some rotation angle never actually
+   covers them or blocks the CTA's click target (canvas is
+   `pointer-events: none`) — it just means that sliver of the bubble is
+   itself briefly occluded, which is the acceptable trade-off for keeping
+   the orbit moving on the short/medium-height windows most real users
+   actually browse in (laptop screens after browser chrome routinely land
+   under 750px of usable height). Width still gates it, because going
+   off-width is a real problem `overflow-hidden` only half-solves (clipped
+   bubbles look broken, not just occluded): ~700px for the 4-point cross,
+   ~1024px for the fuller 6-point hex. Below phone width there simply
+   isn't room for a full sweep at all and the ring stays a fixed 2-point
+   top/bottom pair; from 640–699px width it's a static 4-point cross.
+   Radius, duration and each item's per-tier angle are the only numbers to
+   tune to reshape the composition. */
+.hero-orbit {
+  --orbit-duration: 34s;
+  /* Mobile: 2 bubbles, top+bottom only (zero horizontal offset). */
+  --orbit-radius: clamp(196px, 24vh, 226px);
+}
+
+.hero-orbit-item {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  /* --hover-nudge is 0deg at rest and a few degrees while this item's own
+     bubble is hovered (see the :has() rule below) — a small, smooth slide
+     along the SAME fixed circular path, not a jump off of it, since it's
+     just added to the seat angle the position/upright math already uses. */
+  --angle: calc(var(--angle-base) + var(--hover-nudge, 0deg));
+  transform: translate(-50%, -50%) rotate(var(--angle)) translateY(calc(var(--orbit-radius) * -1)) rotate(calc(var(--angle) * -1));
+  transition: transform 350ms cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+
+.hero-orbit-item:has(.hero-orbit-bubble:hover),
+.hero-orbit-item:has(.hero-orbit-bubble:focus-visible) {
+  --hover-nudge: 5deg;
+}
+
+.hero-orbit-upright {
+  transform: rotate(0deg);
+}
+
+@media (min-width: 640px) {
+  .hero-orbit {
+    /* 640–699px width only: too narrow for the rotating tier below to
+       clear the sides safely, so this stays a static 4-point cross. */
+    --orbit-radius: clamp(206px, 22vw, 224px);
+  }
+  .hero-orbit-item {
+    --angle: calc(var(--angle-sm) + var(--hover-nudge, 0deg));
+  }
+}
+
+@media (min-width: 700px) {
+  .hero-orbit {
+    /* Tablet width and up: the 4-point cross revolves continuously — see
+       the file-level comment above for why height no longer gates this. */
+    --orbit-radius: clamp(262px, 22vw, 300px);
+    animation: hero-orbit-spin var(--orbit-duration) linear infinite;
+  }
+  .hero-orbit-upright {
+    animation: hero-orbit-counter-spin var(--orbit-duration) linear infinite;
+    will-change: transform;
+  }
+}
+
+@media (min-width: 1024px) {
+  .hero-orbit {
+    /* Full 6-point ring, continuously revolving. The vh term still lets
+       the radius shrink gracefully on short windows instead of forcing a
+       constant, so tight vertical space costs some ring size, not the
+       motion itself. */
+    --orbit-radius: clamp(262px, 20vh, 300px);
+    animation: hero-orbit-spin var(--orbit-duration) linear infinite;
+  }
+  .hero-orbit-item {
+    --angle: calc(var(--angle-lg) + var(--hover-nudge, 0deg));
+  }
+  .hero-orbit-upright {
+    animation: hero-orbit-counter-spin var(--orbit-duration) linear infinite;
+    will-change: transform;
+  }
+}
+
+.hero-orbit:has(.hero-orbit-bubble:hover),
+.hero-orbit:has(.hero-orbit-bubble:focus-visible) {
+  animation-play-state: paused;
+}
+.hero-orbit:has(.hero-orbit-bubble:hover) .hero-orbit-upright,
+.hero-orbit:has(.hero-orbit-bubble:focus-visible) .hero-orbit-upright {
+  animation-play-state: paused;
+}
+
+@keyframes hero-orbit-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+@keyframes hero-orbit-counter-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(-360deg); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
