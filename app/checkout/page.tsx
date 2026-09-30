@@ -7,7 +7,6 @@ import { Loader2, AlertCircle } from "lucide-react";
 import { useCart } from "@/lib/useCart";
 import { placeCartOrder } from "@/lib/actions/orders";
 import { getUserAddresses } from "@/lib/actions/addresses";
-import { getAccountStatus } from "@/lib/actions/profile";
 import { useAccountStore } from "@/lib/accountStore";
 import type { Address } from "@/lib/generated/prisma";
 import Input from "@/components/ui/Input";
@@ -15,7 +14,6 @@ import Button from "@/components/ui/Button";
 import CartOrderSummary from "@/components/checkout/CartOrderSummary";
 import OrderConfirmed from "@/components/checkout/OrderConfirmed";
 import SavedAddressPicker from "@/components/checkout/SavedAddressPicker";
-import EmailVerifyPanel from "@/components/account/EmailVerifyPanel";
 import { cn } from "@/lib/utils";
 
 const PAYMENT_METHODS = ["UPI", "Card", "Net Banking", "Wallet"];
@@ -25,13 +23,7 @@ export default function CheckoutPage() {
   const { data: session, status } = useSession();
   const { items, hydrated, loading: cartSyncing, clearCart } = useCart();
   const account = useAccountStore();
-  const setAccount = useAccountStore((s) => s.setAccount);
   const accountPhone = account.phone;
-
-  const refreshAccountStatus = async () => {
-    const result = await getAccountStatus();
-    if (result) setAccount(result);
-  };
 
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [placing, setPlacing] = useState(false);
@@ -177,20 +169,6 @@ export default function CheckoutPage() {
     return (
       <div className="mx-auto max-w-6xl px-5 py-10">
         <Loader2 size={20} className="animate-spin text-text-faint" />
-      </div>
-    );
-  }
-
-  // Server-side, placeCartOrder independently re-checks this too — this is
-  // only the UI gate.
-  if (!account.emailVerified) {
-    return (
-      <div className="mx-auto max-w-md px-5 py-10 md:py-14">
-        <h1 className="text-display text-2xl text-text">Verify your email</h1>
-        <p className="mt-2 text-text-dim">Finish verifying your email before placing your order.</p>
-        <div className="mt-6 rounded-xl border border-border bg-surface p-5">
-          <EmailVerifyPanel email={account.email} verified={account.emailVerified} onRefresh={refreshAccountStatus} />
-        </div>
       </div>
     );
   }

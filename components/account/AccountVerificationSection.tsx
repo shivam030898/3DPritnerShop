@@ -1,37 +1,25 @@
-"use client";
-
-import { useState } from "react";
-import EmailVerifyPanel from "./EmailVerifyPanel";
+import { CheckCircle2 } from "lucide-react";
 
 export default function AccountVerificationSection({
-  email: initialEmail,
-  emailVerified: initialEmailVerified,
+  email,
   phone,
 }: {
   email: string;
-  emailVerified: boolean;
   phone: string | null;
 }) {
-  const [email, setEmail] = useState(initialEmail);
-  const [emailVerified, setEmailVerified] = useState(initialEmailVerified);
-
   return (
     <div className="rounded-xl border border-border bg-surface p-5">
       <p className="text-sm font-medium text-text">Account verification</p>
 
-      <div className="mt-4">
-        <EmailVerifyPanel
-          email={email}
-          verified={emailVerified}
-          // Verification is confirmed server-side by clicking the emailed
-          // link — a full reload re-derives status from the database
-          // rather than trusting any client-held flag.
-          onRefresh={() => window.location.reload()}
-          onEmailChanged={(next) => {
-            setEmail(next);
-            setEmailVerified(false);
-          }}
-        />
+      <div className="mt-4 flex items-center justify-between text-sm">
+        <div>
+          <p className="text-text-faint">Email</p>
+          <p className="text-text">{email}</p>
+        </div>
+        <span className="flex items-center gap-1.5 text-success">
+          <CheckCircle2 size={14} />
+          Verified
+        </span>
       </div>
 
       {phone && (
