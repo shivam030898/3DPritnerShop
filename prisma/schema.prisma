@@ -50,12 +50,13 @@ model User {
 
   accounts      Account[]
   sessions      Session[]
-  orders        Order[]
-  designs       Design[]
-  savedProducts SavedProduct[]
-  addresses     Address[]
-  notifications Notification[]
-  cartItems     CartItem[]
+  orders             Order[]
+  designs            Design[]
+  savedProducts      SavedProduct[]
+  addresses          Address[]
+  notifications      Notification[]
+  cartItems          CartItem[]
+  printablesRequests PrintablesRequest[]
 }
 
 model Account {
@@ -219,6 +220,23 @@ model OrderStatusHistory {
   createdAt DateTime    @default(now())
 
   order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+/**
+ * A visitor's "print this Printables design for me" submission from the
+ * homepage CTA — just a link + contact email, no file, no pricing. Admins
+ * review these manually (see the admin-dashboard project's mirror of this
+ * table) and follow up to quote.
+ */
+model PrintablesRequest {
+  id        String   @id @default(cuid())
+  userId    String?
+  email     String
+  link      String
+  note      String?
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 }
 
 model Notification {
