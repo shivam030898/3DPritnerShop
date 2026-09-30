@@ -6,10 +6,10 @@ export const BRAND = {
   year: 2026,
 };
 
-export const NAV_LINKS = [
-  { label: "Collection", href: "/designs" },
-  { label: "About", href: "/#about" },
-];
+// "About" used to anchor to a section on the homepage (`/#about`) — the
+// homepage is the collection grid now, so that section (and the link) is
+// gone rather than pointing at nothing.
+export const NAV_LINKS = [{ label: "Collection", href: "/designs" }];
 
 /**
  * Real photos of the pieces we sell, stored at

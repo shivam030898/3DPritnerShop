@@ -56,34 +56,6 @@ export default function Navbar() {
     router.push(q ? `/designs?q=${encodeURIComponent(q)}` : "/designs");
   };
 
-  // Bright white applies in exactly one case: at rest on the homepage,
-  // transparent over the busy hero video, where the normal theme text
-  // color (dark in light mode) would be unreadable. Everywhere else —
-  // scrolled (solid `bg-surface`, which is already white in light mode /
-  // near-black in dark mode) or at rest on any other page (transparent
-  // over the plain page background) — the navbar sits over a surface that
-  // already matches the current theme, so the normal --color-text tokens
-  // (dark-on-light / light-on-dark) are exactly what's needed. Forcing
-  // white here was the bug: it made the scrolled navbar look permanently
-  // dark-mode even while the site was in light mode.
-  //
-  // Scoped per-element rather than on the whole header, so it never reaches
-  // components with their own opaque fill — the avatar pill, the open search
-  // input, the Upload button — which already contrast correctly against
-  // their own background and would break if forced white too.
-  const forceWhite = !scrolled && pathname === "/";
-  const navFgStyle = forceWhite
-    ? ({
-        "--color-text": "#ffffff",
-        "--color-text-dim": "rgba(255,255,255,0.85)",
-        "--color-text-faint": "rgba(255,255,255,0.7)",
-        // A drop-shadow (unlike text-shadow, also affects the icon SVGs) so
-        // the white keeps reading clearly over the busy hero video — a
-        // no-op once the navbar is solid black.
-        filter: "drop-shadow(0 1px 3px rgba(0,0,0,0.55))",
-      } as React.CSSProperties)
-    : undefined;
-
   return (
     <>
       <header
@@ -93,14 +65,11 @@ export default function Navbar() {
         )}
       >
         <nav className="relative mx-auto flex h-16 max-w-[1400px] items-center justify-between px-5 md:px-8">
-          <Link href="/" className="shrink-0" style={navFgStyle}>
+          <Link href="/" className="shrink-0">
             <FormaLogo />
           </Link>
 
-          <ul
-            className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-7 lg:flex"
-            style={navFgStyle}
-          >
+          <ul className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-7 lg:flex">
             {NAV_LINKS.map((link) => {
               const active = isNavLinkActive(pathname, link.href);
               return (
@@ -138,9 +107,6 @@ export default function Navbar() {
                   transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
                   className="relative flex items-center"
                 >
-                  {/* Own opaque surface fill — intentionally excluded from navFgStyle,
-                      it already contrasts correctly against bg-surface regardless of the
-                      navbar's transparent/black state. */}
                   <Search size={15} className="pointer-events-none absolute left-3 text-text-faint" />
                   <input
                     ref={searchInputRef}
@@ -159,27 +125,19 @@ export default function Navbar() {
                   type="button"
                   onClick={() => setSearchOpen(true)}
                   aria-label="Search"
-                  style={navFgStyle}
                   className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-text-dim transition-colors hover:bg-surface-2 hover:text-text"
                 >
                   <Search size={18} strokeWidth={1.75} />
                 </motion.button>
               )}
             </AnimatePresence>
-            <span style={{ ...navFgStyle, display: "contents" }}>
-              <ThemeToggle />
-            </span>
-            <span style={{ ...navFgStyle, display: "contents" }}>
-              <CartButton />
-            </span>
+            <ThemeToggle />
+            <CartButton />
             {status === "authenticated" ? (
-              // Own opaque bg-surface-2 fill — intentionally excluded from navFgStyle
-              // for the same reason as the search input above.
               <AvatarMenu />
             ) : (
               <Link
                 href="/login"
-                style={navFgStyle}
                 className="px-2 text-sm text-text-dim transition-colors hover:text-text"
               >
                 Sign in
@@ -195,17 +153,13 @@ export default function Navbar() {
                 router.push("/designs");
               }}
               aria-label="Search"
-              style={navFgStyle}
               className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-text-dim transition-colors hover:bg-surface-2 hover:text-text"
             >
               <Search size={19} strokeWidth={1.75} />
             </button>
-            <span style={{ ...navFgStyle, display: "contents" }}>
-              <CartButton />
-            </span>
+            <CartButton />
             <button
               onClick={() => setOpen(true)}
-              style={navFgStyle}
               className="cursor-pointer p-2 text-text"
               aria-label="Open menu"
             >

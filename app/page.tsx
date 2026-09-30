@@ -1,17 +1,20 @@
-import Hero from "@/components/home/Hero";
+import DesignsPage from "@/app/designs/page";
 import FeaturedPiece from "@/components/home/FeaturedPiece";
-import Collection from "@/components/home/Collection";
-import About from "@/components/home/About";
-import FinalCta from "@/components/home/FinalCta";
 
+// The homepage IS the collection now — no hero/marketing sections in front
+// of it. Reusing the /designs page component (rather than duplicating its
+// grid/search logic) keeps this in sync with the "real" collection route
+// for free; DesignsPage reads the URL's own search params via
+// useSearchParams, so it works identically whether it's rendered here or
+// at /designs. FeaturedPiece (the spinning-shuriken spotlight) is kept below
+// the grid. The Collection-preview/About/FinalCta components this used to
+// render are left in components/home/ (unused, not deleted) in case any of
+// that content comes back later.
 export default function Home() {
   return (
     <>
-      <Hero />
+      <DesignsPage />
       <FeaturedPiece />
-      <Collection />
-      <About />
-      <FinalCta />
     </>
   );
 }
