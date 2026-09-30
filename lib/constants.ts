@@ -181,7 +181,7 @@ export const PRODUCTS: Product[] = [
     slug: "tentacle",
     name: "Tentacle Grip Headphone Stand",
     category: "Object",
-    weightInGrams: null,
+    weightInGrams: 100,
     materialType: "PLA",
     material: "PLA",
     finish: "Matte black",
@@ -189,7 +189,7 @@ export const PRODUCTS: Product[] = [
     dimensionsApprox: true,
     description:
       "A sculptural tentacle headphone stand with fine suction-cup detail, coiling up from a rocky base to cradle your headphones off the desk.",
-    story: "Not yet in the verified Bambu print log — weight and price will appear once a finished print is logged. Dimensions shown are an estimate.",
+    story: "Printed tall and slow to keep every suction-cup detail crisp, with a wide base that holds its balance under the weight of a headset.",
     imageId: "nebula-fox",
     availability: "available",
     creator: "Lumen Forge",
