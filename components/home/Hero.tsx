@@ -1,274 +1,411 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState, type CSSProperties } from "react";
-import dynamic from "next/dynamic";
-import { motion } from "framer-motion";
-import { ArrowRight, ShieldCheck } from "lucide-react";
-import { PRODUCTS, getProductPrice, productImage } from "@/lib/constants";
-import { formatINR, cn } from "@/lib/utils";
-import Button, { ButtonArrow } from "@/components/ui/Button";
-import Link from "next/link";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import Image from "next/image";
+import { ArrowDown, ArrowUpRight } from "lucide-react";
+import { gsap, ScrollTrigger } from "@/lib/gsap";
 
-// The orbit's visuals are genuine WebGL 3D spheres (real geometry + physical
-// material + lighting, not a flat image in a circle) — that needs a browser
-// canvas, so this chunk only ever loads client-side.
-const OrbitSpheres = dynamic(() => import("./OrbitSpheres"), { ssr: false });
+/**
+ * The opening hero: our own printer footage, full-bleed, with the brand
+ * line set over it.
+ *
+ * Media — `public/media/hero/printer-*.mp4` are H.264 re-encodes of the
+ * original `Media/HeroPage.MOV` (a 44 MB portrait HEVC clip straight off the
+ * phone, which is both too heavy for a hero and not decodable in every
+ * browser). The 720p file is served to phone-width viewports via the
+ * `<source media>` switch, the 1080p one everywhere else. The poster is the
+ * clip's own first frame, rendered as a real image *underneath* the video:
+ * it paints first, the video takes over the moment it has a frame, and if
+ * the video can't load at all the poster simply stays.
+ *
+ * Motion — three independent layers so nothing ever fights over a property:
+ *   .hero-frame     scroll  → scale / radius (desktop only)
+ *   .hero-clip      intro   → clip-path reveal
+ *   .hero-parallax  pointer → x / y drift
+ *   .hero-media     intro   → scale settle
+ * All of it lives in gsap.matchMedia, so it is torn down on unmount and
+ * never runs under prefers-reduced-motion. The pre-hydration hidden state
+ * comes from CSS keyed on `data-pending` (see globals.css) so the server
+ * HTML never flashes the finished composition before the intro starts.
+ */
 
-const EASE = [0.16, 1, 0.3, 1] as const;
-const PRICED_PRODUCTS = PRODUCTS.map(getProductPrice).filter((p): p is number => p !== null);
-const FROM_PRICE = PRICED_PRODUCTS.length > 0 ? Math.min(...PRICED_PRODUCTS) : null;
-
-type Layer = "front" | "middle" | "back";
-
-type OrbitSpec = {
-  slug: string;
-  layer: Layer;
-  /** Degrees clockwise from 12 o'clock, at each tier the bubble is visible
-   *  in. The orbit ring itself keeps spinning on top of this — this is
-   *  just this bubble's fixed seat on the ring. Tiers re-balance the
-   *  angles of the visible subset so it always reads as one even circle
-   *  (2 bubbles → 180° apart, 4 → 90° apart, 6 → 60° apart) instead of a
-   *  leftover arc from the desktop layout. */
-  angle: { base: number; sm?: number; lg?: number };
-};
-
-// front = always visible (mobile+), middle = sm and up, back = lg and up —
-// this is the "reduce bubble count on small screens" lever from the design
-// brief. Top (0°) and bottom (180°) stay anchored across every tier so the
-// composition doesn't visibly reshuffle at the breakpoint edges.
-const ORBIT: OrbitSpec[] = [
-  { slug: "kunai", layer: "front", angle: { base: 0 } },
-  { slug: "hexapod-mug-stand", layer: "front", angle: { base: 180 } },
-  { slug: "tentacle", layer: "middle", angle: { base: 90, lg: 60 } },
-  { slug: "shuriken-four-point", layer: "middle", angle: { base: 270, lg: 300 } },
-  { slug: "celtic-coaster", layer: "back", angle: { base: 240 } },
-  { slug: "corset-vase", layer: "back", angle: { base: 120 } },
+const POSTER = "/media/hero/printer-poster.jpg";
+const HEADLINE = [
+  ["Ideas", "take"],
+  ["physical", "form."],
 ];
 
-// Every bubble is the same size at every tier — depth now reads through the
-// marble spheres' own lighting/shadow (see OrbitSpheres), not per-layer CSS
-// shadow strength — and this is what the measured orbit-radius safety
-// margins (see globals.css) are tuned against.
-const BUBBLE_SIZE = "w-16";
+// Module-level on purpose: the full-length intro plays once per page load.
+// Coming back to "/" via client navigation gets a brisker cut of it.
+let introPlayed = false;
 
-const LAYER_VISIBILITY: Record<Layer, string> = {
-  front: "block",
-  middle: "hidden sm:block",
-  back: "hidden lg:block",
-};
+function scrollToSection(id: string) {
+  return (e: React.MouseEvent<HTMLAnchorElement>) => {
+    const target = document.getElementById(id);
+    if (!target) return;
+    e.preventDefault();
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    target.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+  };
+}
 
 export default function Hero() {
-  // Mutable, not state: the 3D layer reads these refs itself inside its own
-  // render loop (see OrbitSpheres' useFrame) rather than through React, so
-  // updating them here must never trigger a re-render.
-  const bubbleEls = useRef<Record<string, HTMLAnchorElement | null>>({});
-  const getBubbleEl = useCallback((slug: string) => bubbleEls.current[slug] ?? null, []);
+  const rootRef = useRef<HTMLElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [videoFailed, setVideoFailed] = useState(false);
 
-  const [hoveredSlug, setHoveredSlug] = useState<string | null>(null);
+  // React doesn't reliably serialise `muted` into the server HTML, and
+  // browsers refuse to autoplay anything not muted — so set it for real and
+  // start playback by hand. Under reduced motion the poster stands in.
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    video.muted = true;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      video.pause();
+      return;
+    }
+    video.play().catch(() => {
+      /* autoplay blocked (e.g. low-power mode) — the poster remains */
+    });
+  }, []);
 
-  const sphereItems = useMemo(
-    () =>
-      ORBIT.map((spec) => ({
-        slug: spec.slug,
-        imageUrl: productImage(PRODUCTS.find((p) => p.slug === spec.slug)!.imageId),
-      })),
-    []
-  );
+  useLayoutEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    const q = gsap.utils.selector(root);
+    const mm = gsap.matchMedia();
+
+    // ---- Intro + scroll hand-off -------------------------------------
+    mm.add("(prefers-reduced-motion: no-preference)", () => {
+      const isDesktop = window.matchMedia("(min-width: 768px)").matches;
+      const navItems = gsap.utils.toArray<HTMLElement>("[data-site-header] [data-nav-item]");
+
+      const intro = gsap.timeline({ defaults: { ease: "expo.out" } });
+
+      // 1–2. Dark stage, then the footage opens up. Phones get a plain fade
+      // instead of animating a clip-path over a playing video.
+      if (isDesktop) {
+        intro.fromTo(
+          q(".hero-clip"),
+          { clipPath: "inset(22% 34% 22% 34% round 28px)", opacity: 0 },
+          {
+            clipPath: "inset(0% 0% 0% 0% round 0px)",
+            opacity: 1,
+            duration: 1.8,
+            ease: "expo.inOut",
+            clearProps: "clipPath",
+          },
+          0.1
+        );
+      } else {
+        intro.fromTo(
+          q(".hero-clip"),
+          { opacity: 0 },
+          { opacity: 1, duration: 1.4, ease: "power2.out" },
+          0.1
+        );
+      }
+
+      // 7. …while the footage itself eases back into its resting scale.
+      intro.fromTo(
+        q(".hero-media"),
+        { scale: isDesktop ? 1.26 : 1.14 },
+        { scale: 1.06, duration: 2.8, ease: "power3.out" },
+        0.1
+      );
+
+      // 3. Brand mark and nav settle in from above.
+      if (navItems.length) {
+        intro.fromTo(
+          navItems,
+          { y: -14, opacity: 0 },
+          { y: 0, opacity: 1, duration: 1, stagger: 0.08, clearProps: "transform,opacity" },
+          0.95
+        );
+      }
+
+      intro
+        .fromTo(q(".hero-eyebrow"), { y: 14, opacity: 0 }, { y: 0, opacity: 1, duration: 1 }, 1.05)
+        // 4. Headline: every character rises out of its own mask.
+        .fromTo(
+          q(".hero-char"),
+          { yPercent: 118 },
+          { yPercent: 0, duration: 1.15, stagger: 0.024 },
+          1.15
+        )
+        // 5–6. Supporting line, then the CTAs.
+        .fromTo(q(".hero-copy"), { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 1 }, 1.75)
+        .fromTo(
+          q(".hero-cta"),
+          { y: 18, opacity: 0 },
+          { y: 0, opacity: 1, duration: 0.9, stagger: 0.1 },
+          1.9
+        )
+        .fromTo(
+          q(".hero-meta"),
+          { opacity: 0 },
+          { opacity: 1, duration: 1.2, stagger: 0.12, ease: "power2.out" },
+          2.2
+        );
+
+      if (introPlayed) intro.timeScale(1.7);
+      introPlayed = true;
+
+      // Every from-state above is now applied inline, so the CSS pre-hide
+      // can let go without anything flashing.
+      root.removeAttribute("data-pending");
+
+      // Scroll: the hero is sticky and the collection sheet rides up over
+      // it, so over exactly one hero-height of scroll the copy lifts away
+      // and the footage sinks back. Once fully covered, stop decoding video.
+      const stage = root.parentElement ?? root;
+      const video = videoRef.current;
+      const handoff = gsap.timeline({
+        defaults: { ease: "none" },
+        scrollTrigger: {
+          trigger: stage,
+          start: "top top",
+          end: () => `+=${root.offsetHeight}`,
+          scrub: 0.5,
+          invalidateOnRefresh: true,
+          onLeave: () => video?.pause(),
+          onEnterBack: () => {
+            video?.play().catch(() => {});
+          },
+        },
+      });
+      handoff
+        .to(q(".hero-content"), { y: -90, opacity: 0, duration: 0.55 }, 0)
+        .to(q(".hero-dim"), { opacity: 0.6, duration: 1 }, 0);
+    });
+
+    // ---- Desktop only: the frame draws in as the sheet arrives ---------
+    mm.add("(prefers-reduced-motion: no-preference) and (min-width: 768px)", () => {
+      const stage = root.parentElement ?? root;
+      gsap.to(q(".hero-frame"), {
+        scale: 0.93,
+        borderRadius: 28,
+        ease: "none",
+        scrollTrigger: {
+          trigger: stage,
+          start: "top top",
+          end: () => `+=${root.offsetHeight}`,
+          scrub: 0.5,
+          invalidateOnRefresh: true,
+        },
+      });
+    });
+
+    // ---- Real mouse only: a few pixels of depth -------------------------
+    mm.add(
+      "(prefers-reduced-motion: no-preference) and (hover: hover) and (pointer: fine)",
+      () => {
+        const mediaX = gsap.quickTo(q(".hero-parallax"), "x", { duration: 1.4, ease: "power3.out" });
+        const mediaY = gsap.quickTo(q(".hero-parallax"), "y", { duration: 1.4, ease: "power3.out" });
+        const titleX = gsap.quickTo(q(".hero-title"), "x", { duration: 1.1, ease: "power3.out" });
+        const titleY = gsap.quickTo(q(".hero-title"), "y", { duration: 1.1, ease: "power3.out" });
+
+        const onMove = (e: PointerEvent) => {
+          const nx = e.clientX / window.innerWidth - 0.5;
+          const ny = e.clientY / window.innerHeight - 0.5;
+          mediaX(nx * -22);
+          mediaY(ny * -14);
+          titleX(nx * 8);
+          titleY(ny * 5);
+        };
+        root.addEventListener("pointermove", onMove);
+        return () => root.removeEventListener("pointermove", onMove);
+      }
+    );
+
+    // Fonts landing late can change the hero's height; keep triggers honest.
+    document.fonts?.ready.then(() => ScrollTrigger.refresh()).catch(() => {});
+
+    return () => mm.revert();
+  }, []);
 
   return (
-    <section className="relative -mt-16 flex min-h-screen min-h-svh min-h-dvh items-center overflow-hidden px-5 py-14 md:px-8 lg:py-0">
-      <video
-        aria-hidden
-        autoPlay
-        loop
-        muted
-        playsInline
-        className="absolute inset-0 z-0 h-full w-full object-cover"
-      >
-        <source src="/media/HeroPage.MOV" type="video/mp4" />
-      </video>
+    <section
+      ref={rootRef}
+      data-hero
+      data-pending=""
+      className="dark relative top-0 z-0 h-svh min-h-[600px] w-full overflow-hidden bg-[#070708] text-[#f2f2f0] [@media(min-height:600px)]:sticky"
+    >
+      <noscript>
+        <style>{`[data-hero][data-pending] .hero-clip,[data-hero][data-pending] [data-hero-anim]{opacity:1!important}`}</style>
+      </noscript>
 
-      {/* Base tint: keeps the video visible while lifting overall contrast. */}
-      <div aria-hidden className="pointer-events-none absolute inset-0 z-[1] bg-black/32 md:bg-black/25" />
+      {/* Footage ------------------------------------------------------- */}
+      <div className="hero-frame absolute inset-0 overflow-hidden will-change-transform">
+        <div className="hero-clip absolute inset-0">
+          <div className="hero-parallax absolute inset-0">
+            {/* Graded down in CSS: the raw clip is a brightly lit room, and
+                pulling most of the colour out lets the type and the single
+                accent carry the frame. */}
+            <div className="hero-media absolute inset-0 [filter:saturate(0.28)_contrast(1.1)_brightness(0.86)]">
+              <Image
+                src={POSTER}
+                alt=""
+                fill
+                sizes="100vw"
+                loading="eager"
+                fetchPriority="high"
+                className="object-cover object-center md:object-[50%_42%]"
+              />
+              {!videoFailed && (
+                <video
+                  ref={videoRef}
+                  aria-hidden
+                  tabIndex={-1}
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  disablePictureInPicture
+                  preload="auto"
+                  className="absolute inset-0 h-full w-full object-cover object-center md:object-[50%_42%]"
+                >
+                  <source
+                    src="/media/hero/printer-720.mp4"
+                    type="video/mp4"
+                    media="(max-width: 767px)"
+                  />
+                  {/* An unplayable <video> reports the failure on its last
+                      <source>, not on the element itself. */}
+                  <source
+                    src="/media/hero/printer-1080.mp4"
+                    type="video/mp4"
+                    onError={() => setVideoFailed(true)}
+                  />
+                </video>
+              )}
+            </div>
+          </div>
 
-      {/* Localized spotlight, centered on the text column — smooth radial falloff so the
-          floating product circles at the edges stay bright and the video reads clearly. */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 z-[1] md:hidden"
-        style={{
-          background:
-            "radial-gradient(ellipse 80% 66% at 50% 56%, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.34) 42%, rgba(0,0,0,0.14) 70%, rgba(0,0,0,0) 100%)",
-        }}
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 z-[1] hidden md:block"
-        style={{
-          background:
-            "radial-gradient(ellipse 58% 54% at 50% 50%, rgba(0,0,0,0.48) 0%, rgba(0,0,0,0.24) 45%, rgba(0,0,0,0.08) 72%, rgba(0,0,0,0) 100%)",
-        }}
-      />
+          {/* One overlay, four jobs: an even tint to quiet the room, a
+              left-hand falloff for the copy, a floor that melts into the
+              section colour, and a soft ceiling behind the navbar. */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0"
+            style={{
+              background: [
+                "linear-gradient(180deg, rgba(7,7,8,0.72) 0%, rgba(7,7,8,0) 20%)",
+                "linear-gradient(0deg, rgba(7,7,8,0.96) 0%, rgba(7,7,8,0.62) 26%, rgba(7,7,8,0) 62%)",
+                "linear-gradient(90deg, rgba(7,7,8,0.9) 0%, rgba(7,7,8,0.62) 36%, rgba(7,7,8,0) 76%)",
+                "rgba(7,7,8,0.38)",
+              ].join(","),
+            }}
+          />
+        </div>
+      </div>
 
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 z-[2]"
-        style={{
-          background:
-            "radial-gradient(ellipse 42% 38% at 50% 48%, var(--hero-glow), transparent 72%)",
-        }}
-      />
+      {/* Scroll-driven dimmer, above the footage and below the copy. */}
+      <div aria-hidden className="hero-dim pointer-events-none absolute inset-0 bg-[#070708] opacity-0" />
 
-      <div className="relative z-10 mx-auto flex w-full min-h-[520px] max-w-[1400px] items-center justify-center py-8 lg:min-h-[92vh] lg:py-12">
-        {/* The marble spheres render into this sibling canvas, NOT as a
-            child of .hero-orbit below — .hero-orbit is the element that
-            physically spins (see globals.css), and nesting the canvas
-            inside it would spin the canvas's own DOM box along with it,
-            corrupting the very rect this canvas reads every frame to place
-            each sphere. Both stay anchored to this same centered box, so
-            their coordinate spaces still line up perfectly. */}
-        <OrbitSpheres items={sphereItems} getEl={getBubbleEl} hoveredSlug={hoveredSlug} />
+      {/* Copy ---------------------------------------------------------- */}
+      <div className="hero-content relative z-10 mx-auto flex h-full w-full max-w-[1400px] flex-col justify-end px-5 pb-24 pt-24 md:px-8 md:pb-8">
+        <div className="hero-title will-change-transform">
+          <p
+            data-hero-anim
+            className="hero-eyebrow inline-flex items-center gap-2.5 rounded-full bg-white/[0.06] py-1.5 pl-3 pr-4 text-[10px] font-medium uppercase tracking-[0.16em] text-white/80 ring-1 ring-inset ring-white/15 backdrop-blur-md md:text-[11px]"
+          >
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-70 motion-reduce:hidden" />
+              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-accent" />
+            </span>
+            Printed in-house, layer by layer
+          </p>
 
-        {/* Orbit ring — centered on this same box, so its center always
-            matches the center of the text column below. Past a wide-and-tall
-            enough viewport (see .hero-orbit in globals.css) the ring spins
-            continuously; each item counter-spins by the same amount so the
-            bubble stays upright while only its position travels around the
-            circle. Below that it holds a static circular arrangement. */}
-        <div className="hero-orbit pointer-events-none absolute inset-0 z-20">
-          {ORBIT.map((spec) => (
-            <OrbitBubble
-              key={spec.slug}
-              spec={spec}
-              registerEl={(el) => {
-                bubbleEls.current[spec.slug] = el;
-              }}
-              onHoverChange={(hovered) => setHoveredSlug(hovered ? spec.slug : null)}
-            />
-          ))}
+          <h1
+            data-hero-anim
+            aria-label="Ideas take physical form."
+            className="hero-headline text-display mt-5 uppercase md:mt-6"
+          >
+            {HEADLINE.map((line, lineIndex) => (
+              <span key={lineIndex} aria-hidden className="block">
+                {line.map((word, wordIndex) => (
+                  <span
+                    key={word}
+                    className={`-my-[0.08em] inline-block overflow-hidden py-[0.08em] align-bottom ${
+                      wordIndex < line.length - 1 ? "mr-[0.24em]" : ""
+                    }`}
+                  >
+                    {Array.from(word).map((char, charIndex) => (
+                      <span
+                        key={charIndex}
+                        className={`hero-char inline-block will-change-transform ${
+                          char === "." ? "text-accent" : ""
+                        }`}
+                      >
+                        {char}
+                      </span>
+                    ))}
+                  </span>
+                ))}
+              </span>
+            ))}
+          </h1>
         </div>
 
-        <div className="relative z-30 mx-auto flex w-full max-w-[420px] flex-col items-center px-2 text-center">
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.7, ease: EASE }}
-            className="text-mono-label text-xs text-[#E8D8B8] [text-shadow:0_1px_10px_rgba(0,0,0,0.45)]"
-          >
-            The Objects
-          </motion.p>
+        <p
+          data-hero-anim
+          className="hero-copy mt-6 max-w-[38ch] text-[15px] leading-relaxed text-white/70 md:mt-8 md:max-w-[44ch] md:text-[17px]"
+        >
+          From digital imagination to tangible objects. Designed with precision. Made to exist.
+        </p>
 
-          <motion.h1
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.55, delay: 0.78, ease: EASE }}
-            className="text-display mt-3 text-[clamp(2rem,4vw,2.75rem)] leading-[1.05] text-white [text-shadow:0_2px_18px_rgba(0,0,0,0.5)]"
-          >
-            Objects made
-            <br />
-            to be collected.
-          </motion.h1>
+        <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center md:mt-9">
+          {/* Both CTAs use the shared `.btn-fill` system (globals.css): they
+              stay exactly where they are, and hover is a left-to-right
+              brand-colour fill. The dark translucent backing keeps the
+              labels readable over whatever frame of footage is behind. */}
+          <div data-hero-anim className="hero-cta">
+            <a
+              href="#collection"
+              onClick={scrollToSection("collection")}
+              className="btn-fill btn-fill--on-media flex h-14 w-full items-center justify-between gap-5 rounded-full px-7 text-[12px] font-semibold uppercase tracking-[0.14em] sm:w-auto"
+            >
+              Explore collection
+              <ArrowDown size={16} aria-hidden />
+            </a>
+          </div>
 
-          <motion.p
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.86, ease: EASE }}
-            className="mt-3 max-w-[32ch] text-sm text-white/80 [text-shadow:0_2px_14px_rgba(0,0,0,0.45)]"
-          >
-            A curated series of sculptural pieces, designed, printed, and finished with intention.
-          </motion.p>
+          <div data-hero-anim className="hero-cta">
+            <a
+              href="#create"
+              onClick={scrollToSection("create")}
+              className="btn-fill btn-fill--on-media btn-fill--quiet flex h-14 w-full items-center justify-between gap-5 rounded-full px-7 text-[12px] font-semibold uppercase tracking-[0.14em] sm:w-auto"
+            >
+              Create something
+              <ArrowUpRight size={16} aria-hidden />
+            </a>
+          </div>
+        </div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.95, ease: EASE }}
-            className="relative z-40 mt-7"
+        {/* Baseline: scroll cue on one side, brand statement on the other. */}
+        <div aria-hidden className="mt-8 h-px bg-white/10 md:mt-12" />
+        <div className="flex items-center justify-between gap-6 pt-4 md:pt-5">
+          <a
+            data-hero-anim
+            href="#collection"
+            onClick={scrollToSection("collection")}
+            className="hero-meta group flex items-center gap-3 text-[10px] font-medium uppercase tracking-[0.2em] text-white/55 transition-colors duration-300 hover:text-white"
           >
-            <Button as="link" href="/designs" size="lg">
-              View the collection
-              <ButtonArrow>
-                <ArrowRight size={14} />
-              </ButtonArrow>
-            </Button>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5, delay: 1.1, ease: EASE }}
-            className="mt-5 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px] text-white/70"
-          >
-            {FROM_PRICE !== null && (
-              <>
-                <span>From {formatINR(FROM_PRICE)}</span>
-                <span>·</span>
-              </>
-            )}
-            <span>2–4 day delivery</span>
-            <span>·</span>
-            <span className="flex items-center gap-1">
-              <ShieldCheck size={11} />
-              Secure checkout
+            <span aria-hidden className="relative block h-8 w-px overflow-hidden bg-white/20">
+              <span className="hero-scroll-line absolute inset-x-0 top-0 h-1/2 bg-white" />
             </span>
-          </motion.div>
+            Scroll
+          </a>
+          <p
+            data-hero-anim
+            className="hero-meta text-right text-[10px] font-medium uppercase tracking-[0.2em] text-white/55"
+          >
+            Designed digitally. <span className="block text-white/85 sm:inline">Built physically.</span>
+          </p>
         </div>
       </div>
     </section>
-  );
-}
-
-function OrbitBubble({
-  spec,
-  registerEl,
-  onHoverChange,
-}: {
-  spec: OrbitSpec;
-  registerEl: (el: HTMLAnchorElement | null) => void;
-  onHoverChange: (hovered: boolean) => void;
-}) {
-  const product = PRODUCTS.find((p) => p.slug === spec.slug)!;
-  const bubblePrice = getProductPrice(product);
-  const visibility = LAYER_VISIBILITY[spec.layer];
-
-  const angleVars = {
-    "--angle-base": `${spec.angle.base}deg`,
-    "--angle-sm": `${spec.angle.sm ?? spec.angle.base}deg`,
-    "--angle-lg": `${spec.angle.lg ?? spec.angle.sm ?? spec.angle.base}deg`,
-  } as CSSProperties;
-
-  // No entrance animation here anymore — OrbitSpheres animates the marble
-  // itself in from off-canvas-left along a curved path (see FRESH_ENTRANCE
-  // there). This element only ever needs to sit at its final orbit seat: it's
-  // an invisible hit target (for click/hover/focus/keyboard), not a visual,
-  // so it never needs to visually travel anywhere itself.
-  return (
-    <div className={cn("hero-orbit-item pointer-events-none", visibility)} style={angleVars}>
-      <div className="hero-orbit-upright">
-        {/* Invisible hit target — sized and positioned exactly where the
-            marble sphere is drawn, so the sphere stays clickable, focusable
-            and announces as a link, while the actual visual comes from the
-            shared WebGL canvas underneath. */}
-        <Link
-          ref={registerEl}
-          href={`/designs/${product.slug}`}
-          aria-label={`${product.name}${bubblePrice !== null ? ` · ${formatINR(bubblePrice)}` : ""}`}
-          className={cn(
-            "hero-orbit-bubble group relative block aspect-square cursor-pointer rounded-full pointer-events-auto",
-            BUBBLE_SIZE
-          )}
-          onPointerEnter={() => onHoverChange(true)}
-          onPointerLeave={() => onHoverChange(false)}
-          onFocus={() => onHoverChange(true)}
-          onBlur={() => onHoverChange(false)}
-        >
-          <div className="pointer-events-none absolute inset-x-0 -bottom-6 flex flex-col items-center opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-visible:opacity-100">
-            <p className="max-w-[120px] truncate rounded-full bg-text px-2.5 py-1 text-[10px] font-medium text-bg shadow-card">
-              {product.name}
-              {bubblePrice !== null && ` · ${formatINR(bubblePrice)}`}
-            </p>
-          </div>
-        </Link>
-      </div>
-    </div>
   );
 }

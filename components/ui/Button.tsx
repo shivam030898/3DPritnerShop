@@ -1,17 +1,19 @@
-"use client";
-
 import Link from "next/link";
-import { motion, useReducedMotion, type Variants } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 type Variant = "primary" | "secondary" | "ghost";
 type Size = "sm" | "md" | "lg";
 
+/**
+ * Hover / focus / pressed / disabled behaviour is NOT defined here — it all
+ * comes from the shared `.btn-fill` system in app/globals.css (a colour fill
+ * that wipes in from the left; the button itself never moves or scales).
+ * This component only picks the variant and the size.
+ */
 const VARIANT_CLASSES: Record<Variant, string> = {
-  primary: "bg-text text-bg hover:bg-text/85 disabled:bg-border-strong disabled:text-text-faint",
-  secondary:
-    "bg-surface text-text border border-border-strong hover:border-text disabled:text-text-faint disabled:hover:border-border-strong",
-  ghost: "text-text hover:bg-surface-2 disabled:text-text-faint",
+  primary: "btn-fill--solid",
+  secondary: "btn-fill--outline",
+  ghost: "btn-fill--ghost",
 };
 
 const SIZE_CLASSES: Record<Size, string> = {
@@ -21,45 +23,12 @@ const SIZE_CLASSES: Record<Size, string> = {
 };
 
 /**
- * One shared hover/tap/focus language for every CTA that goes through this
- * component — a hair of scale and a soft shadow, nothing that reads as "an
- * animation" on its own. Background-color feedback stays on the plain
- * Tailwind `hover:` classes above (already smooth, no reason to move it
- * into Framer state); this only owns the properties CSS :hover can't
- * orchestrate cleanly across a button and its child arrow at once.
+ * Wrapper for a Button's trailing icon. It used to nudge the icon forward
+ * on hover; buttons no longer animate position at all, so this is now just
+ * a stable inline box — kept so existing call sites don't need to change.
  */
-const BUTTON_VARIANTS: Variants = {
-  rest: { scale: 1, boxShadow: "0 0px 0px rgba(20, 20, 20, 0)" },
-  hover: { scale: 1.02, boxShadow: "0 6px 20px rgba(20, 20, 20, 0.12)" },
-  tap: { scale: 0.98, boxShadow: "0 2px 8px rgba(20, 20, 20, 0.08)" },
-};
-
-const HOVER_TRANSITION = { duration: 0.25, ease: [0.16, 1, 0.3, 1] as const };
-
-/**
- * Wrap a trailing icon (almost always `<ArrowRight />`) in this so it nudges
- * forward when the enclosing <Button> is hovered/focused/tapped — it reads
- * the "hover"/"tap" variant from the nearest ancestor via Framer's variant
- * propagation, so no separate hover listener or state is needed here.
- * Only meant for a Button's own trailing icon, not standalone icon buttons,
- * quantity controls, or carousel chevrons — those aren't "come forward" CTAs.
- */
-const ARROW_VARIANTS: Variants = {
-  rest: { x: 0 },
-  hover: { x: 5 },
-  tap: { x: 5 },
-};
-
 export function ButtonArrow({ children }: { children: React.ReactNode }) {
-  const shouldReduceMotion = useReducedMotion();
-  return (
-    <motion.span
-      variants={shouldReduceMotion ? undefined : ARROW_VARIANTS}
-      className="inline-flex"
-    >
-      {children}
-    </motion.span>
-  );
+  return <span className="inline-flex">{children}</span>;
 }
 
 type CommonProps = {
@@ -83,49 +52,37 @@ type LinkProps = CommonProps & {
 
 export default function Button(props: ButtonProps | LinkProps) {
   const { children, variant = "primary", size = "md", className, disabled } = props;
-  const shouldReduceMotion = useReducedMotion();
   const classes = cn(
-    "inline-flex items-center justify-center gap-2 rounded-lg font-medium outline-none transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-text/25 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
+    "btn-fill inline-flex items-center justify-center gap-2 rounded-lg font-medium",
     VARIANT_CLASSES[variant],
     SIZE_CLASSES[size],
-    disabled && "pointer-events-none opacity-50",
+    disabled && "pointer-events-none",
     className
   );
 
-  // Reduced motion: skip Framer's gesture-driven variants entirely (no
-  // scale, no shadow, no arrow nudge) and fall back to the plain color
-  // transition already on `classes` above — the button stays fully
-  // functional, it just stops moving.
-  const motionProps = shouldReduceMotion
-    ? {}
-    : {
-        variants: BUTTON_VARIANTS,
-        initial: "rest",
-        whileHover: "hover",
-        whileFocus: "hover",
-        whileTap: "tap",
-        transition: HOVER_TRANSITION,
-      };
-
   if (props.as === "link") {
     return (
-      <motion.div {...motionProps} className="inline-block rounded-lg">
-        <Link href={props.href} className={classes}>
+      <div className="inline-block rounded-lg">
+        <Link
+          href={props.href}
+          className={classes}
+          aria-disabled={disabled || undefined}
+          tabIndex={disabled ? -1 : undefined}
+        >
           {children}
         </Link>
-      </motion.div>
+      </div>
     );
   }
 
   return (
-    <motion.button
-      {...motionProps}
+    <button
       type={props.type ?? "button"}
       onClick={props.onClick}
       disabled={disabled}
       className={classes}
     >
       {children}
-    </motion.button>
+    </button>
   );
 }

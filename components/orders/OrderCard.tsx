@@ -45,7 +45,7 @@ export default function OrderCard({ order }: { order: Order }) {
         <span className="text-sm font-medium text-text">{formatINR(order.total)}</span>
         <ArrowRight
           size={16}
-          className="text-text-faint transition-transform duration-[250ms] ease-[var(--ease-standard)] group-hover:translate-x-1 motion-reduce:transition-none motion-reduce:group-hover:translate-x-0"
+          className="text-text-faint"
         />
       </div>
     </Link>

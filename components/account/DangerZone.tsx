@@ -29,13 +29,13 @@ export default function DangerZone() {
           <button
             onClick={handleDelete}
             disabled={loading}
-            className="flex items-center gap-1.5 rounded-lg bg-danger px-3.5 py-2 text-sm font-medium text-white"
+            className="btn-fill btn-fill--solid btn-fill--danger flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium"
           >
             {loading ? <Loader2 size={14} className="animate-spin" /> : "Yes, delete everything"}
           </button>
           <button
             onClick={() => setConfirming(false)}
-            className="rounded-lg border border-border-strong px-3.5 py-2 text-sm text-text"
+            className="btn-fill btn-fill--outline btn-fill--quiet rounded-lg px-[15px] py-[9px] text-sm"
           >
             Cancel
           </button>
@@ -43,7 +43,7 @@ export default function DangerZone() {
       ) : (
         <button
           onClick={() => setConfirming(true)}
-          className="mt-3 rounded-lg border border-danger/40 px-3.5 py-2 text-sm font-medium text-danger transition-colors hover:bg-danger/10"
+          className="btn-fill btn-fill--outline btn-fill--danger mt-3 rounded-lg px-[15px] py-[9px] text-sm font-medium"
         >
           Delete account
         </button>

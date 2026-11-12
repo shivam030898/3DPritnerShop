@@ -107,56 +107,15 @@ export default function FeaturedPiece() {
         </p>
 
         <div className="mt-8 flex justify-center">
-          <MagneticButton href={`/designs/${PRODUCT.slug}`}>View piece</MagneticButton>
+          <Link
+            href={`/designs/${PRODUCT.slug}`}
+            className="btn-fill btn-fill--solid inline-flex h-12 items-center gap-2.5 rounded-full px-7 text-sm font-semibold"
+          >
+            View piece
+            <ArrowUpRight size={16} aria-hidden />
+          </Link>
         </div>
       </div>
     </section>
-  );
-}
-
-/**
- * A bespoke CTA for this section only (not the shared <Button/>) — pulls
- * toward the cursor within its own bounds and glows on hover, on top of a
- * light-sweep across the pill. Scoped here rather than added to the shared
- * Button component so every other CTA site-wide keeps its current, calmer
- * hover language.
- */
-function MagneticButton({ href, children }: { href: string; children: React.ReactNode }) {
-  const ref = useRef<HTMLAnchorElement>(null);
-  const [offset, setOffset] = useState({ x: 0, y: 0 });
-  const shouldReduceMotion = useReducedMotion();
-
-  const handleMove = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    if (shouldReduceMotion || !ref.current) return;
-    const rect = ref.current.getBoundingClientRect();
-    const relX = e.clientX - rect.left - rect.width / 2;
-    const relY = e.clientY - rect.top - rect.height / 2;
-    setOffset({ x: relX * 0.25, y: relY * 0.35 });
-  };
-  const reset = () => setOffset({ x: 0, y: 0 });
-
-  return (
-    <motion.div
-      animate={{ x: offset.x, y: offset.y }}
-      transition={{ type: "spring", stiffness: 150, damping: 12, mass: 0.3 }}
-    >
-      <Link
-        ref={ref}
-        href={href}
-        onMouseMove={handleMove}
-        onMouseLeave={reset}
-        className="group relative inline-flex h-12 items-center gap-2.5 overflow-hidden rounded-full bg-text px-7 text-sm font-semibold text-bg shadow-[0_0_0_0_rgba(16,57,252,0)] transition-shadow duration-300 hover:shadow-[0_0_40px_4px_var(--color-accent-line)]"
-      >
-        <span className="relative z-10">{children}</span>
-        <ArrowUpRight
-          size={16}
-          className="relative z-10 transition-transform duration-300 ease-out group-hover:translate-x-1 group-hover:-translate-y-1"
-        />
-        {/* Light sweep — mix-blend-difference so the same white streak reads
-            as a bright glint on the button's dark-mode-light / light-mode-dark
-            fill either way, instead of needing two separate sweep colors. */}
-        <span className="absolute inset-0 -translate-x-[120%] skew-x-[-20deg] bg-white/40 mix-blend-difference transition-transform duration-700 ease-out group-hover:translate-x-[120%]" />
-      </Link>
-    </motion.div>
   );
 }

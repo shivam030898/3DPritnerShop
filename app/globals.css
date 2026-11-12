@@ -246,6 +246,187 @@ body {
   to { transform: rotate(-360deg); }
 }
 
+/* Homepage hero + collection sheet ---------------------------------------
+   Sized against both axes so the two-line headline always fits a short
+   laptop window as well as a wide one. */
+.hero-headline {
+  font-size: clamp(2.6rem, min(8.2vw, 14svh), 7rem);
+  line-height: 0.92;
+  letter-spacing: -0.045em;
+}
+
+.col-heading {
+  font-size: clamp(2rem, 5.6vw, 4.75rem);
+  line-height: 0.96;
+  letter-spacing: -0.04em;
+}
+
+/* Product cutouts are mostly matte black, so the card behind them stays a
+   light studio surface in both themes — in dark mode it is a soft pool of
+   light on charcoal rather than a flat white tile. */
+.showcase-surface {
+  background: #efefec;
+}
+.dark .showcase-surface {
+  background: radial-gradient(120% 90% at 50% 38%, #dcdcd8 0%, #c4c4c0 55%, #a9a9a6 100%);
+}
+
+/* Button interaction system -------------------------------------------------
+   One hover language for every CTA on the site: the button never moves,
+   scales or shifts — a brand-colour fill wipes in from the left behind the
+   label, and wipes back out the same way on leave.
+
+   How it works: `.btn-fill` owns the mechanics (a ::before layer scaled on
+   the X axis — transform only, so it is compositor-driven and cannot cause
+   layout shift), and a variant class only sets custom properties. The edge
+   is an inset box-shadow rather than a real border, so adding the class to
+   an element never changes its size. Keyboard focus gets the same fill plus
+   the site's standard focus outline.
+
+   Variants
+     --solid     primary: filled with the text colour at rest
+     --outline   secondary: transparent with a clearly visible edge
+     --ghost     tertiary: no edge, neutral fill
+     --quiet     modifier: neutral fill instead of the brand colour
+     --danger    modifier: destructive colour
+     --on-media  for buttons sitting on photo/video (see Hero.tsx)
+   The fill is the fixed brand blue from the logo (not the themed accent),
+   so white label text keeps the same contrast in both themes. */
+.btn-fill {
+  --btn-fill: #1039fc;
+  --btn-fill-text: #ffffff;
+  --btn-bg: transparent;
+  --btn-text: var(--color-text);
+  --btn-edge: transparent;
+  --btn-edge-width: 1px;
+  --btn-speed: 400ms;
+  --btn-ease: cubic-bezier(0.65, 0, 0.35, 1);
+
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  cursor: pointer;
+  background-color: var(--btn-bg);
+  color: var(--btn-text);
+  box-shadow: inset 0 0 0 var(--btn-edge-width) var(--btn-edge);
+  transition:
+    color var(--btn-speed) var(--btn-ease),
+    box-shadow var(--btn-speed) var(--btn-ease),
+    opacity 200ms ease;
+}
+.btn-fill::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--btn-fill);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition:
+    transform var(--btn-speed) var(--btn-ease),
+    filter 150ms ease;
+}
+
+.btn-fill--solid {
+  --btn-bg: var(--color-text);
+  --btn-text: var(--color-bg);
+  --btn-edge: var(--color-text);
+}
+.btn-fill--outline {
+  --btn-edge: color-mix(in srgb, var(--color-text) 42%, transparent);
+}
+.btn-fill--ghost,
+.btn-fill--quiet {
+  --btn-fill: var(--color-surface-2);
+  --btn-fill-text: var(--color-text);
+}
+.btn-fill--outline.btn-fill--quiet {
+  --btn-bg: var(--color-surface);
+  --btn-edge: var(--color-border-strong);
+}
+.btn-fill--danger {
+  --btn-fill: var(--color-danger);
+  --btn-fill-text: #ffffff;
+}
+.btn-fill--outline.btn-fill--danger {
+  --btn-text: var(--color-danger);
+  --btn-edge: color-mix(in srgb, var(--color-danger) 50%, transparent);
+}
+.btn-fill--solid.btn-fill--danger {
+  --btn-bg: var(--color-danger);
+  --btn-text: #ffffff;
+  --btn-edge: var(--color-danger);
+  --btn-fill: color-mix(in srgb, var(--color-danger) 72%, #000000);
+}
+/* Over footage: a translucent dark backing + blur keeps the label legible
+   whatever frame is behind it; the white edge carries the hierarchy
+   (heavier and brighter for the primary, lighter for the secondary). */
+.btn-fill--on-media {
+  --btn-bg: rgba(7, 7, 8, 0.52);
+  --btn-text: #ffffff;
+  --btn-edge: rgba(255, 255, 255, 0.92);
+  --btn-edge-width: 1.5px;
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+.btn-fill--on-media.btn-fill--quiet {
+  --btn-bg: rgba(7, 7, 8, 0.38);
+  --btn-edge: rgba(255, 255, 255, 0.42);
+  --btn-edge-width: 1px;
+  --btn-fill: #1039fc;
+  --btn-fill-text: #ffffff;
+}
+
+@media (hover: hover) {
+  .btn-fill:hover:not(:disabled, [aria-disabled="true"]) {
+    color: var(--btn-fill-text);
+    box-shadow: inset 0 0 0 var(--btn-edge-width) var(--btn-fill);
+  }
+  .btn-fill:hover:not(:disabled, [aria-disabled="true"])::before {
+    transform: scaleX(1);
+  }
+}
+.btn-fill:focus-visible,
+.btn-fill:active:not(:disabled, [aria-disabled="true"]) {
+  color: var(--btn-fill-text);
+  box-shadow: inset 0 0 0 var(--btn-edge-width) var(--btn-fill);
+}
+.btn-fill:focus-visible::before,
+.btn-fill:active:not(:disabled, [aria-disabled="true"])::before {
+  transform: scaleX(1);
+}
+/* Pressed: the fill deepens — feedback through tone, still no movement. */
+.btn-fill:active:not(:disabled, [aria-disabled="true"])::before {
+  filter: brightness(0.84);
+}
+.btn-fill:disabled,
+.btn-fill[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+@keyframes hero-scroll-line {
+  0% { transform: translateY(-110%); }
+  60%, 100% { transform: translateY(210%); }
+}
+.hero-scroll-line {
+  animation: hero-scroll-line 2.2s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+
+/* Pre-hydration state for the intro sequence: the server HTML carries
+   `data-pending`, which keeps the stage dark until Hero.tsx has applied its
+   own inline start values and removes the attribute. Scoped to motion-OK
+   so reduced-motion visitors (who get no intro) see everything at once. */
+@media (prefers-reduced-motion: no-preference) {
+  [data-hero][data-pending] .hero-clip,
+  [data-hero][data-pending] [data-hero-anim] {
+    opacity: 0;
+  }
+  body:has([data-hero][data-pending]) [data-site-header] {
+    opacity: 0;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

@@ -38,7 +38,7 @@ export default function GoogleButton({ callbackUrl }: { callbackUrl: string }) {
         setLoading(true);
         signIn("google", { callbackUrl });
       }}
-      className="flex h-11 w-full items-center justify-center gap-2.5 rounded-lg border border-border-strong bg-surface text-sm font-medium text-text transition-colors hover:bg-surface-2 disabled:opacity-60"
+      className="btn-fill btn-fill--outline btn-fill--quiet flex h-11 w-full items-center justify-center gap-2.5 rounded-lg text-sm font-medium"
     >
       {loading ? <Loader2 size={16} className="animate-spin" /> : <GoogleIcon />}
       {loading ? "Signing you in…" : "Continue with Google"}

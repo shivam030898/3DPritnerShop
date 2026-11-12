@@ -54,7 +54,6 @@ export default async function AccountPage() {
           View all{" "}
           <ArrowRight
             size={14}
-            className="transition-transform duration-[250ms] ease-[var(--ease-standard)] group-hover:translate-x-1 motion-reduce:transition-none motion-reduce:group-hover:translate-x-0"
           />
         </Link>
       </div>

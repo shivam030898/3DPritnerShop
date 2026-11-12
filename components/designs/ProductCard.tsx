@@ -16,9 +16,9 @@ import SaveButton from "./SaveButton";
  * everywhere so the card reads as one surface coming forward, not several
  * elements animating independently (that was the previous bug: the card
  * lifted on one transition, the image zoomed 10% on another, and each
- * button faded/slid in on a third and fourth). The card scales up a hair
- * more than the image so the product still feels "inside" the card rather
- * than pasted on top of it.
+ * button faded/slid in on a third and fourth). The card itself stays put —
+ * hover is the shadow deepening and a slight zoom of the image inside its
+ * frame, never the card changing size or position.
  */
 const HOVER_TRANSITION = "duration-300 ease-[var(--ease-standard)] motion-reduce:transition-none";
 
@@ -51,7 +51,7 @@ export default function ProductCard({
   return (
     <Link
       href={`/designs/${product.slug}`}
-      className={`group relative flex cursor-pointer flex-col outline-none transition-transform hover:z-10 hover:scale-[1.025] focus-visible:z-10 focus-visible:scale-[1.025] focus-visible:ring-2 focus-visible:ring-text/25 focus-visible:ring-offset-2 focus-visible:ring-offset-bg motion-reduce:hover:scale-100 motion-reduce:focus-visible:scale-100 ${HOVER_TRANSITION}`}
+      className={`group relative flex cursor-pointer flex-col outline-none focus-visible:ring-2 focus-visible:ring-text/25 focus-visible:ring-offset-2 focus-visible:ring-offset-bg`}
     >
       <div
         className={`relative aspect-[4/5] overflow-hidden rounded-2xl bg-white p-8 shadow-[0_1px_2px_rgba(20,20,20,0.04)] transition-shadow group-hover:shadow-[0_16px_28px_rgba(20,20,20,0.10)] group-focus-visible:shadow-[0_16px_28px_rgba(20,20,20,0.10)] sm:p-9 ${HOVER_TRANSITION}`}

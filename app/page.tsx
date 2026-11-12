@@ -1,22 +1,25 @@
-import DesignsPage from "@/app/designs/page";
+import Hero from "@/components/home/Hero";
+import Collection from "@/components/home/Collection";
 import FeaturedPiece from "@/components/home/FeaturedPiece";
 import CustomPrintCTA from "@/components/home/CustomPrintCTA";
 
-// The homepage IS the collection now — no hero/marketing sections in front
-// of it. Reusing the /designs page component (rather than duplicating its
-// grid/search logic) keeps this in sync with the "real" collection route
-// for free; DesignsPage reads the URL's own search params via
-// useSearchParams, so it works identically whether it's rendered here or
-// at /designs. FeaturedPiece (the spinning-shuriken spotlight) and
-// CustomPrintCTA (Printables link-out, for anyone who doesn't want any of
-// the catalog pieces) are kept below the grid. The Collection-preview/
-// About/FinalCta components this used to render are left in
-// components/home/ (unused, not deleted) in case any of that content
-// comes back later.
+// Hero → collection → featured piece → Printables request.
+//
+// Hero and Collection share one wrapper on purpose: the hero is
+// `position: sticky` inside it, so the collection "sheet" scrolls up over
+// the printer footage, and the hero is released again once the wrapper
+// ends (by which point the sheet has fully covered it). The -mt-16 cancels
+// the layout's navbar offset so the footage bleeds up behind the navbar.
+//
+// The full searchable grid still lives at /designs; this page's Collection
+// reads the same PRODUCTS list, so the two never drift apart.
 export default function Home() {
   return (
     <>
-      <DesignsPage />
+      <div className="relative -mt-16">
+        <Hero />
+        <Collection />
+      </div>
       <FeaturedPiece />
       <CustomPrintCTA />
     </>

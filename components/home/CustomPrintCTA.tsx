@@ -30,7 +30,7 @@ export default function CustomPrintCTA() {
   };
 
   return (
-    <section className="border-t border-border px-5 py-16 md:py-20">
+    <section id="create" className="scroll-mt-16 border-t border-border px-5 py-16 md:py-20">
       <div className="mx-auto max-w-2xl text-center">
         <p className="text-mono-label text-xs text-text-faint">Don&apos;t see what you want?</p>
         <h2 className="text-display mt-4 text-[clamp(1.5rem,2.6vw,2rem)] leading-[1.1] text-text">
@@ -45,7 +45,7 @@ export default function CustomPrintCTA() {
             href={PRINTABLES_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex h-10 items-center gap-2 rounded-lg border border-border-strong px-5 text-sm font-medium text-text transition-colors hover:border-text"
+            className="btn-fill btn-fill--outline inline-flex h-10 items-center gap-2 rounded-lg px-5 text-sm font-medium"
           >
             Browse Printables
             <ExternalLink size={14} />
@@ -86,7 +86,7 @@ export default function CustomPrintCTA() {
             <button
               type="submit"
               disabled={submitting}
-              className="inline-flex h-11 items-center justify-center gap-2 self-center rounded-lg bg-text px-6 text-sm font-medium text-bg transition-colors hover:bg-text/85 disabled:opacity-50"
+              className="btn-fill btn-fill--solid inline-flex h-11 items-center justify-center gap-2 self-center rounded-lg px-6 text-sm font-medium"
             >
               {submitting ? "Sending…" : "Send us the link"}
               {!submitting && <Send size={14} />}

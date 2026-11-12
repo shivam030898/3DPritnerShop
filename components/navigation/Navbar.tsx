@@ -29,6 +29,10 @@ export default function Navbar() {
   // of the page, solid black for any scrollY > 0 — stays black even once
   // scrolling has stopped, and only clears once the user scrolls back to 0.
   const [scrolled, setScrolled] = useState(false);
+  // Homepage only: true once the page has scrolled past the hero footage.
+  // Until then the bar floats over dark video, so it borrows the dark
+  // theme's tokens (see `overHero` below) whatever the site theme is.
+  const [pastHero, setPastHero] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const { status } = useSession();
   const pathname = usePathname();
@@ -39,11 +43,23 @@ export default function Navbar() {
   }, [open]);
 
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 0);
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 0);
+      const hero = document.querySelector<HTMLElement>("[data-hero]");
+      // 64 = this bar's own height: flip the moment the next section's top
+      // edge reaches the bar, not when it reaches the top of the window.
+      setPastHero(hero ? window.scrollY >= hero.offsetHeight - 64 : true);
+    };
     handleScroll(); // pages can load already scrolled (e.g. back/forward nav)
     window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+    window.addEventListener("resize", handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("resize", handleScroll);
+    };
+  }, [pathname]);
+
+  const overHero = pathname === "/" && !pastHero;
 
   useEffect(() => {
     if (searchOpen) searchInputRef.current?.focus();
@@ -59,17 +75,28 @@ export default function Navbar() {
   return (
     <>
       <header
+        data-site-header
         className={cn(
-          "fixed inset-x-0 top-0 z-40 transition-colors duration-[250ms] ease-out",
-          scrolled ? "bg-surface" : "bg-transparent"
+          "fixed inset-x-0 top-0 z-40 transition-[background-color,box-shadow] duration-300 ease-out",
+          // `dark` here re-scopes the theme tokens for this subtree only, so
+          // every `text-text` / `bg-surface` inside reads light-on-dark over
+          // the footage without a second set of colour classes.
+          overHero
+            ? "dark bg-transparent"
+            : scrolled
+              ? "bg-bg/75 shadow-[0_1px_0_var(--color-border)] backdrop-blur-xl backdrop-saturate-150"
+              : "bg-transparent"
         )}
       >
         <nav className="relative mx-auto flex h-16 max-w-[1400px] items-center justify-between px-5 md:px-8">
-          <Link href="/" className="shrink-0">
+          <Link href="/" data-nav-item className="shrink-0">
             <FormaLogo />
           </Link>
 
-          <ul className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-7 lg:flex">
+          {/* Centred by its wrapper, so the list itself stays free of
+              transforms for the homepage intro to animate. */}
+          <div className="pointer-events-none absolute inset-x-0 hidden justify-center lg:flex">
+          <ul data-nav-item className="pointer-events-auto flex items-center gap-7">
             {NAV_LINKS.map((link) => {
               const active = isNavLinkActive(pathname, link.href);
               return (
@@ -78,15 +105,17 @@ export default function Navbar() {
                     href={link.href}
                     aria-current={active ? "page" : undefined}
                     className={cn(
-                      "relative inline-block whitespace-nowrap py-1 text-sm transition-colors duration-200",
+                      "group relative inline-block whitespace-nowrap py-1 text-sm transition-colors duration-300",
                       active ? "text-text" : "text-text-dim hover:text-text"
                     )}
                   >
                     {link.label}
                     <span
                       className={cn(
-                        "absolute inset-x-0 -bottom-1 h-[2px] rounded-full bg-text transition-opacity duration-200",
-                        active ? "opacity-100" : "opacity-0"
+                        "absolute inset-x-0 -bottom-0.5 h-px bg-text transition-transform duration-500 ease-[var(--ease-standard)] motion-reduce:transition-none",
+                        active
+                          ? "origin-left scale-x-100"
+                          : "origin-right scale-x-0 group-hover:origin-left group-hover:scale-x-100"
                       )}
                     />
                   </Link>
@@ -94,8 +123,9 @@ export default function Navbar() {
               );
             })}
           </ul>
+          </div>
 
-          <div className="hidden items-center gap-1.5 lg:flex">
+          <div data-nav-item className="relative hidden items-center gap-1.5 lg:flex">
             <AnimatePresence initial={false} mode="wait">
               {searchOpen ? (
                 <motion.form
@@ -145,7 +175,7 @@ export default function Navbar() {
             )}
           </div>
 
-          <div className="flex items-center gap-0.5 lg:hidden">
+          <div data-nav-item className="flex items-center gap-0.5 lg:hidden">
             <button
               type="button"
               onClick={() => {
