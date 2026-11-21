@@ -2,6 +2,7 @@
 
 import { auth, signOut } from "@/auth";
 import { db } from "@/lib/db";
+import { emailVerificationSelect, hasVerifiedEmail } from "@/lib/emailVerification";
 import { ORDER_STATUS_SEQUENCE, getOrderStageIndex } from "@/lib/orders";
 import { normalizePhone } from "@/lib/phone";
 
@@ -70,7 +71,7 @@ export async function getAccountStatus(): Promise<AccountStatus | null> {
   try {
     const user = await db.user.findUnique({
       where: { id: session.user.id },
-      select: { name: true, email: true, phone: true, image: true, emailVerified: true },
+      select: { name: true, email: true, phone: true, image: true, ...emailVerificationSelect },
     });
     if (!user) return null;
 
@@ -79,7 +80,7 @@ export async function getAccountStatus(): Promise<AccountStatus | null> {
       email: user.email ?? "",
       phone: user.phone,
       image: user.image,
-      emailVerified: !!user.emailVerified,
+      emailVerified: hasVerifiedEmail(user),
       needsSetup: !user.phone,
     };
   } catch (err) {

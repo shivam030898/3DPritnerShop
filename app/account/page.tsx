@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { requireUser } from "@/lib/requireUser";
 import { db } from "@/lib/db";
+import { emailVerificationSelect, hasVerifiedEmail } from "@/lib/emailVerification";
 import { getProfileStats } from "@/lib/actions/profile";
 import { getUserOrders } from "@/lib/actions/orders";
 import AccountNav from "@/components/account/AccountNav";
@@ -13,7 +14,10 @@ import Button from "@/components/ui/Button";
 export default async function AccountPage() {
   const user = await requireUser("/account");
   const [dbUser, stats, orders] = await Promise.all([
-    db.user.findUnique({ where: { id: user.id } }),
+    db.user.findUnique({
+      where: { id: user.id },
+      include: { accounts: emailVerificationSelect.accounts },
+    }),
     getProfileStats(),
     getUserOrders(),
   ]);
@@ -32,7 +36,7 @@ export default async function AccountPage() {
         <ProfileHeader
           name={dbUser.name ?? "Unnamed"}
           email={dbUser.email ?? ""}
-          emailVerified={!!dbUser.emailVerified}
+          emailVerified={hasVerifiedEmail(dbUser)}
           phone={dbUser.phone}
           image={dbUser.image}
           createdAt={dbUser.createdAt}

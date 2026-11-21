@@ -2,6 +2,7 @@
 
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
+import { emailVerificationSelect, hasVerifiedEmail } from "@/lib/emailVerification";
 import { generateOrderId, generateTrackingNumber } from "@/lib/orders";
 
 const CARRIERS = ["Xpressbees", "Delhivery", "Shiprocket"];
@@ -42,12 +43,12 @@ export async function placeCartOrder(details: CheckoutDetails): Promise<PlaceOrd
   // an order for an unverified account.
   const user = await db.user.findUnique({
     where: { id: userId },
-    select: { emailVerified: true },
+    select: emailVerificationSelect,
   });
   if (!user) {
     return { ok: false, error: "You must be signed in to place an order." };
   }
-  if (!user.emailVerified) {
+  if (!hasVerifiedEmail(user)) {
     return { ok: false, error: "Email verification required." };
   }
 

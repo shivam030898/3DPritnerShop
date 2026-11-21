@@ -11,34 +11,33 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      // Google's own `email_verified` claim is a real verification signal —
-      // carry it straight into our emailVerified column so a Google user is
-      // never asked to re-verify an address the provider already confirmed.
       profile(profile) {
         return {
           id: profile.sub,
           name: profile.name,
           email: profile.email,
           image: profile.picture,
-          emailVerified: profile.email_verified ? new Date() : null,
         };
       },
     }),
   ],
-  callbacks: {
-    async signIn({ user, account, profile }) {
-      // Self-healing backfill: an account created before the Google profile
-      // mapping above existed (or any other pre-existing row) still gets
-      // credit for Google's verified-email claim on its very next sign-in,
-      // without a one-off migration script.
-      if (account?.provider === "google" && profile?.email_verified && user?.id) {
-        const existing = await db.user.findUnique({ where: { id: user.id }, select: { emailVerified: true } });
-        if (existing && !existing.emailVerified) {
-          await db.user.update({ where: { id: user.id }, data: { emailVerified: new Date() } });
-        }
+  events: {
+    // Signing in with Google already proves the address, so a Google user is
+    // never asked to verify their email. This has to be an event, not the
+    // profile mapping or the signIn callback: Auth.js creates every new OAuth
+    // user with `emailVerified: null` (ignoring the profile), and the signIn
+    // callback runs before that row exists. This event fires after, with the
+    // real database user, for first-time and returning sign-ins alike.
+    async signIn({ user, account }) {
+      if (account?.provider === "google" && user.id) {
+        await db.user.updateMany({
+          where: { id: user.id, emailVerified: null },
+          data: { emailVerified: new Date() },
+        });
       }
-      return true;
     },
+  },
+  callbacks: {
     async jwt({ token, user }) {
       if (user?.id) token.id = user.id;
       return token;
